@@ -13,8 +13,8 @@ export default function AuthCard() {
           {isLogin ? 'Selamat Datang' : 'Buat Akun Baru'}
         </h2>
         
-        {/* Render form berdasarkan state */}
-        {isLogin ? <LoginForm /> : <SignupForm />}
+        {/* Oper state ke SignupForm agar bisa kembali ke Login otomatis */}
+        {isLogin ? <LoginForm /> : <SignupForm onSuccess={() => setIsLogin(true)} />}
         
         <div className="mt-8 text-center border-t border-gray-100 pt-6">
           <p className="text-sm text-gray-600">
