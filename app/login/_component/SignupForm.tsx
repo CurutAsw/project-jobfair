@@ -1,6 +1,13 @@
 'use client';
 import { useState } from 'react';
 
+type StoredUser = {
+  nama: string;
+  email: string;
+  password: string;
+  role: string;
+};
+
 export default function SignupForm({ onSuccess }: { onSuccess: () => void }) {
   const [formData, setFormData] = useState({
     nama: '',
@@ -17,10 +24,10 @@ export default function SignupForm({ onSuccess }: { onSuccess: () => void }) {
     e.preventDefault();
     
     // 1. Ambil data user yang sudah ada di localStorage (jika ada)
-    const existingUsers = JSON.parse(localStorage.getItem('users') || '[]');
+    const existingUsers = JSON.parse(localStorage.getItem('users') || '[]') as StoredUser[];
     
     // 2. Cek apakah email sudah terdaftar
-    const userExists = existingUsers.some((user: any) => user.email === formData.email);
+    const userExists = existingUsers.some((user) => user.email === formData.email);
     if (userExists) {
       alert('Email sudah terdaftar! Gunakan email lain.');
       return;

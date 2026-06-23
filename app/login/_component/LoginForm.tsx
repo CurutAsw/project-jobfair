@@ -7,14 +7,21 @@ export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  type StoredUser = {
+    nama: string;
+    email: string;
+    password: string;
+    role: 'pencari_kerja' | 'perusahaan' | string;
+  };
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
 
     // 1. Ambil data dari localStorage
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const users = JSON.parse(localStorage.getItem('users') || '[]') as StoredUser[];
 
     // 2. Cari user yang cocok
-    const foundUser = users.find((u: any) => u.email === email && u.password === password);
+    const foundUser = users.find((u) => u.email === email && u.password === password);
 
     if (foundUser) {
       alert(`Login berhasil! Selamat datang, ${foundUser.nama}`);
