@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from 'react';
 import type { JobApplication } from '../_lib/applications';
+import { upsertChat } from '../_lib/chats';
+import { createNotification } from '../_lib/notifications';
 import BottomBar from './_components/bottombar';
 import CandidateContent from './_components/candidate-content';
-import { candidates, chats, type Candidate, type Chat, type CompanyTab } from './_components/data';
+import { candidates, type Candidate, type CompanyTab } from './_components/data';
 import JobContent from './_components/job-content';
 import NotificationContent from './_components/notification-content';
 import PostingContent from './_components/posting-content';
@@ -17,7 +19,7 @@ export default function PerusahaanDashboard() {
   const [isProfileOpen, setProfileOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('Semua');
-  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
 
   const filteredCandidates = useMemo(() => {
     return candidates.filter((candidate) => {
@@ -30,49 +32,60 @@ export default function PerusahaanDashboard() {
   }, [filter, query]);
 
   const openCandidateChat = (candidate: Candidate) => {
-    const existingChat = chats.find((chat) => chat.name === candidate.name);
-    const candidateChat: Chat = existingChat ?? {
-      id: candidate.id,
-      name: candidate.name,
-      role: candidate.role,
-      message: `Halo, kami tertarik dengan profil ${candidate.role} Anda.`,
-      time: 'Baru saja',
-      unread: false,
+    const chatId = `candidate-${candidate.id}`;
+    upsertChat({
+      id: chatId,
+      companyName: 'PT Teknologi Masa Depan',
+      jobseekerName: candidate.name,
+      jobseekerRole: candidate.role,
       avatarUrl: candidate.avatarUrl,
-      history: [
+      unreadFor: 'jobseeker',
+      messages: [
         {
-          id: 1,
+          id: `message-${Date.now()}`,
           sender: 'company',
           text: `Halo ${candidate.name}, kami tertarik dengan profil ${candidate.role} Anda.`,
           time: 'Baru saja',
         },
       ],
-    };
+    });
+    createNotification({
+      audience: 'jobseeker',
+      category: 'pesan',
+      title: 'Pesan Baru',
+      description: `PT Teknologi Masa Depan menghubungi Anda untuk posisi ${candidate.role}.`,
+    });
 
-    setSelectedChat(candidateChat);
+    setSelectedChatId(chatId);
     setActiveTab('pesan');
   };
 
   const openApplicantChat = (application: JobApplication) => {
-    const applicantChat: Chat = {
-      id: 1000 + application.jobId,
-      name: application.applicantName,
-      role: application.applicantRole,
-      message: `Halo ${application.applicantName}, kami sudah menerima lamaran Anda untuk posisi ${application.jobTitle}.`,
-      time: 'Baru saja',
-      unread: false,
+    const chatId = `application-${application.jobId}-${application.applicantEmail}`;
+    upsertChat({
+      id: chatId,
+      companyName: application.company,
+      jobseekerName: application.applicantName,
+      jobseekerRole: application.applicantRole,
       avatarUrl: application.avatarUrl,
-      history: [
+      unreadFor: 'jobseeker',
+      messages: [
         {
-          id: 1,
+          id: `message-${Date.now()}`,
           sender: 'company',
           text: `Halo ${application.applicantName}, kami sudah menerima lamaran Anda untuk posisi ${application.jobTitle}.`,
           time: 'Baru saja',
         },
       ],
-    };
+    });
+    createNotification({
+      audience: 'jobseeker',
+      category: 'pesan',
+      title: 'Pesan Baru',
+      description: `${application.company} menghubungi Anda tentang lamaran ${application.jobTitle}.`,
+    });
 
-    setSelectedChat(applicantChat);
+    setSelectedChatId(chatId);
     setActiveTab('pesan');
   };
 
@@ -87,14 +100,14 @@ export default function PerusahaanDashboard() {
       case 'notifikasi':
         return <NotificationContent />;
       case 'pesan':
-        return <MessageContent selectedChat={selectedChat} onSelectChat={setSelectedChat} />;
+        return <MessageContent selectedChatId={selectedChatId} onSelectChat={setSelectedChatId} />;
       default:
         return <CandidateContent candidates={filteredCandidates} query={query} filter={filter} onContact={openCandidateChat} />;
     }
   };
 
   return (
-    <div className="h-screen overflow-y-auto bg-gray-100 font-sans flex flex-col [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+    <div className="h-screen overflow-y-auto bg-gray-100 font-sans flex flex-col [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none">
       <Sidebar isOpen={isProfileOpen} onClose={() => setProfileOpen(false)} />
       <TopBar
         query={query}
@@ -103,7 +116,7 @@ export default function PerusahaanDashboard() {
         onProfileClick={() => setProfileOpen(true)}
         onTabChange={setActiveTab}
       />
-      <main className="flex-1 pt-20 pb-28 px-4 max-w-screen-md w-full mx-auto">
+      <main className="flex-1 pt-20 pb-28 px-4 max-w-3xl w-full mx-auto">
         {renderContent()}
       </main>
       <BottomBar activeTab={activeTab} setActiveTab={setActiveTab} />

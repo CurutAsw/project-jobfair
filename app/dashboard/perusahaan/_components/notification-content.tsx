@@ -1,14 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { NOTIFICATIONS_UPDATED_EVENT, readNotifications, type DashboardNotification } from '../../_lib/notifications';
 
 export default function NotificationContent() {
   const [filterAktif, setFilterAktif] = useState('semua');
-  const notifications = [
-    { id: 1, kategori: 'pelamar', judul: 'Pelamar Baru', deskripsi: 'Siti Aminah melamar posisi Frontend Developer dan menunggu tinjauan rekruter.', waktu: '8 menit yang lalu', isNew: true },
-    { id: 2, kategori: 'sistem', judul: 'Profil Perusahaan Terverifikasi', deskripsi: 'Identitas perusahaan Anda berhasil diverifikasi oleh sistem.', waktu: '1 jam yang lalu', isNew: false },
-    { id: 3, kategori: 'pelamar', judul: 'Kandidat Membalas Pesan', deskripsi: 'Rizky Pratama mengirim balasan untuk undangan interview.', waktu: 'Kemarin', isNew: true },
-  ];
+  const [notifications, setNotifications] = useState<DashboardNotification[]>(() => readNotifications('company'));
+
+  useEffect(() => {
+    const syncNotifications = () => setNotifications(readNotifications('company'));
+
+    window.addEventListener(NOTIFICATIONS_UPDATED_EVENT, syncNotifications);
+    window.addEventListener('storage', syncNotifications);
+    return () => {
+      window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, syncNotifications);
+      window.removeEventListener('storage', syncNotifications);
+    };
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -21,15 +29,22 @@ export default function NotificationContent() {
         ))}
       </div>
       <div className="space-y-2">
-        {notifications.filter((notif) => filterAktif === 'semua' || notif.kategori === filterAktif).map((notif) => (
-          <article key={notif.id} className={`p-4 rounded-xl border shadow-sm ${notif.isNew ? 'bg-blue-50/40 border-blue-100' : 'bg-white border-gray-200'}`}>
-            <div className="flex justify-between gap-3 mb-1">
-              <h2 className="text-sm font-bold text-gray-900">{notif.judul}</h2>
-              <span className="text-[10px] text-gray-400 shrink-0">{notif.waktu}</span>
-            </div>
-            <p className="text-xs text-gray-600">{notif.deskripsi}</p>
-          </article>
-        ))}
+        {notifications.filter((notif) => filterAktif === 'semua' || notif.category === filterAktif).length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 text-center">
+            <h2 className="text-sm font-bold text-gray-900">Belum ada notifikasi</h2>
+            <p className="text-xs text-gray-500 mt-1">Notifikasi akan muncul ketika ada interaksi baru.</p>
+          </div>
+        ) : (
+          notifications.filter((notif) => filterAktif === 'semua' || notif.category === filterAktif).map((notif) => (
+            <article key={notif.id} className={`p-4 rounded-xl border shadow-sm ${notif.isNew ? 'bg-blue-50/40 border-blue-100' : 'bg-white border-gray-200'}`}>
+              <div className="flex justify-between gap-3 mb-1">
+                <h2 className="text-sm font-bold text-gray-900">{notif.title}</h2>
+                <span className="text-[10px] text-gray-400 shrink-0">{notif.createdAt}</span>
+              </div>
+              <p className="text-xs text-gray-600">{notif.description}</p>
+            </article>
+          ))
+        )}
       </div>
     </div>
   );

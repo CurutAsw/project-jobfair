@@ -4,48 +4,22 @@ import Image from 'next/image';
 
 import { useEffect, useState } from 'react';
 import { APPLICATIONS_UPDATED_EVENT, readApplications, saveApplication, type JobApplication } from '../_lib/applications';
+import { addChatMessage, CHATS_UPDATED_EVENT, readChats, type SharedChat, upsertChat } from '../_lib/chats';
+import { createNotification, NOTIFICATIONS_UPDATED_EVENT, readNotifications, type DashboardNotification } from '../_lib/notifications';
+import SocialPostCard from '../_components/social-post-card';
+import { createSocialPost, deleteSocialPost, getSocialJobId, readSocialPosts, SOCIAL_POSTS_UPDATED_EVENT, updateSocialPost, type SocialPost } from '../_lib/social-posts';
 import BottomBar from './_components/bottombar';
 import Sidebar from './_components/sidebar';
 import TopBar from './_components/topbar';
 
-type TimelinePost = {
-  id: number;
-  nama: string;
-  waktu: string;
-  konten: string;
-  likes: number;
-  comments: number;
-  isUser: boolean;
-};
-
 type JobPost = {
+  postId: string;
   id: number;
   title: string;
   company: string;
   type: string;
   location: string;
   description: string;
-  responsibilities: string[];
-  requirements: string[];
-  qualificationTerms: string[];
-  deadline: string;
-  extraInfo: string;
-};
-
-type JobComment = {
-  id: number;
-  author: string;
-  text: string;
-};
-
-type Chat = {
-  id: number;
-  nama: string;
-  perusahaan: string;
-  pesan: string;
-  waktu: string;
-  unread: boolean;
-  avatarUrl: string;
 };
 
 export default function PencariKerjaDashboard() {
@@ -86,126 +60,115 @@ export default function PencariKerjaDashboard() {
   );
 }
 
+function socialPostToJobPost(post: SocialPost): JobPost {
+  return {
+    postId: post.id,
+    id: getSocialJobId(post.id),
+    title: 'Lowongan Pekerjaan',
+    company: post.company ?? post.authorName,
+    type: post.workType ?? '-',
+    location: post.location ?? '-',
+    description: post.content,
+  };
+}
+
 function HomeContent({ user, onApplied }: { user: { name: string; email: string }; onApplied: () => void }) {
-  const jobs: JobPost[] = [
-    {
-      id: 1,
-      title: 'Software Engineer 1',
-      company: 'PT Teknologi Masa Depan',
-      type: 'Full-time',
-      location: 'Jakarta',
-      description: 'Bergabung dengan tim produk untuk membangun fitur web job fair digital yang stabil, cepat, dan mudah digunakan oleh pencari kerja maupun rekruter.',
-      responsibilities: [
-        'Mengembangkan antarmuka aplikasi menggunakan React, TypeScript, dan Tailwind CSS.',
-        'Bekerja sama dengan tim desain dan backend untuk menerjemahkan kebutuhan produk menjadi fitur siap pakai.',
-        'Melakukan debugging, optimasi performa, dan review kualitas kode sebelum rilis.',
-      ],
-      requirements: [
-        'Memahami JavaScript/TypeScript, React, REST API, dan Git.',
-        'Berpengalaman minimal 1 tahun pada pengembangan frontend atau proyek portofolio yang relevan.',
-        'Mampu membaca desain Figma dan mengubahnya menjadi UI responsif.',
-      ],
-      qualificationTerms: [
-        'Minimal pendidikan D3/S1 Teknik Informatika, Sistem Informasi, atau bidang terkait.',
-        'Usia maksimal 30 tahun.',
-        'Keahlian utama: React, TypeScript, Tailwind CSS, dan dasar UI/UX.',
-        'Wajib melampirkan CV terbaru dan portofolio/GitHub.',
-      ],
-      deadline: '30 Juli 2026',
-      extraInfo: 'Lamaran dibuka untuk kandidat yang siap bekerja onsite di Jakarta dengan proses interview hybrid.',
-    },
-    {
-      id: 2,
-      title: 'Software Engineer 2',
-      company: 'PT Teknologi Masa Depan',
-      type: 'Hybrid',
-      location: 'Bandung',
-      description: 'Posisi ini berfokus pada pengembangan dashboard internal dan integrasi fitur kandidat untuk mendukung proses rekrutmen perusahaan.',
-      responsibilities: [
-        'Membangun modul dashboard, formulir, dan halaman detail lowongan.',
-        'Mengintegrasikan data dari API ke tampilan aplikasi dengan state management yang rapi.',
-        'Menjaga konsistensi komponen UI lintas halaman.',
-      ],
-      requirements: [
-        'Menguasai React, Next.js, dan dasar pengujian UI.',
-        'Memiliki pengalaman membuat aplikasi responsif minimal 1 tahun.',
-        'Terbiasa bekerja dengan workflow Git dan komunikasi lintas tim.',
-      ],
-      qualificationTerms: [
-        'Minimal pendidikan D3/S1 bidang teknologi atau pengalaman setara.',
-        'Usia 21-32 tahun.',
-        'Keahlian utama: Next.js, API integration, dan responsive layout.',
-        'Wajib melampirkan CV dan portofolio proyek.',
-      ],
-      deadline: '15 Agustus 2026',
-      extraInfo: 'Skema kerja hybrid 3 hari WFO Bandung dan 2 hari remote.',
-    },
-    {
-      id: 3,
-      title: 'Software Engineer 3',
-      company: 'PT Teknologi Masa Depan',
-      type: 'Remote',
-      location: 'Indonesia',
-      description: 'Tim platform mencari engineer yang nyaman bekerja remote untuk mengembangkan fitur kolaborasi dan otomasi proses job fair.',
-      responsibilities: [
-        'Merancang dan mengimplementasikan fitur frontend berskala produksi.',
-        'Meningkatkan aksesibilitas, performa, dan stabilitas halaman utama aplikasi.',
-        'Berpartisipasi dalam planning sprint dan dokumentasi teknis.',
-      ],
-      requirements: [
-        'Kuat di fundamental frontend, TypeScript, dan component architecture.',
-        'Berpengalaman bekerja remote dan mampu mengelola komunikasi asinkron.',
-        'Memahami integrasi autentikasi dan pola fetching data modern.',
-      ],
-      qualificationTerms: [
-        'Minimal pendidikan SMA/SMK dengan portofolio kuat atau D3/S1 bidang terkait.',
-        'Usia fleksibel selama memenuhi kompetensi teknis.',
-        'Keahlian utama: TypeScript, Next.js, testing dasar, dan dokumentasi.',
-        'Wajib melampirkan CV, portofolio, dan contoh kode.',
-      ],
-      deadline: '31 Agustus 2026',
-      extraInfo: 'Terbuka untuk kandidat seluruh Indonesia dengan jam kerja fleksibel mengikuti zona WIB.',
-    },
-  ];
   const [selectedJob, setSelectedJob] = useState<JobPost | null>(null);
   const [likedJobs, setLikedJobs] = useState<number[]>([]);
   const [savedJobs, setSavedJobs] = useState<number[]>([]);
   const [appliedJobIds, setAppliedJobIds] = useState<number[]>(() => (
     readApplications().filter((application) => application.applicantEmail === user.email).map((application) => application.jobId)
   ));
+  const [socialPosts, setSocialPosts] = useState<SocialPost[]>(() => readSocialPosts());
+  const [likedSocialPosts, setLikedSocialPosts] = useState<string[]>([]);
   const [commentText, setCommentText] = useState('');
-  const [commentsByJob, setCommentsByJob] = useState<Record<number, JobComment[]>>({
-    1: [
-      { id: 1, author: 'Ayu', text: 'Apakah fresh graduate boleh melamar posisi ini?' },
-      { id: 2, author: 'Rafi', text: 'Informasi portofolio web pribadi sangat membantu, terima kasih.' },
-    ],
-  });
 
-  const selectedJobComments = selectedJob ? commentsByJob[selectedJob.id] ?? [] : [];
   const isSelectedJobLiked = selectedJob ? likedJobs.includes(selectedJob.id) : false;
   const isSelectedJobSaved = selectedJob ? savedJobs.includes(selectedJob.id) : false;
   const isSelectedJobApplied = selectedJob ? appliedJobIds.includes(selectedJob.id) : false;
 
+  useEffect(() => {
+    const syncPosts = () => setSocialPosts(readSocialPosts());
+
+    window.addEventListener(SOCIAL_POSTS_UPDATED_EVENT, syncPosts);
+    window.addEventListener('storage', syncPosts);
+    return () => {
+      window.removeEventListener(SOCIAL_POSTS_UPDATED_EVENT, syncPosts);
+      window.removeEventListener('storage', syncPosts);
+    };
+  }, []);
+
   const toggleJobLike = (jobId: number) => {
-    setLikedJobs((current) => current.includes(jobId) ? current.filter((id) => id !== jobId) : [...current, jobId]);
+    if (!selectedJob) return;
+    const wasLiked = likedJobs.includes(jobId);
+    setLikedJobs((current) => wasLiked ? current.filter((id) => id !== jobId) : [...current, jobId]);
+    updateSocialPost(selectedJob.postId, (post) => ({ ...post, likes: Math.max(0, post.likes + (wasLiked ? -1 : 1)) }));
+    if (!wasLiked) {
+      createNotification({
+        audience: 'company',
+        category: 'interaksi',
+        title: 'Lowongan Disukai',
+        description: `${user.name} menyukai lowongan yang dibuka perusahaan.`,
+      });
+    }
   };
 
   const toggleSavedJob = (jobId: number) => {
     setSavedJobs((current) => current.includes(jobId) ? current.filter((id) => id !== jobId) : [...current, jobId]);
+    createNotification({
+      audience: 'jobseeker',
+      category: 'interaksi',
+      title: 'Lowongan Disimpan',
+      description: 'Lowongan berhasil disimpan untuk dilihat kembali nanti.',
+    });
+  };
+
+  const toggleSocialLike = (postId: string) => {
+    const wasLiked = likedSocialPosts.includes(postId);
+    setLikedSocialPosts((current) => wasLiked ? current.filter((id) => id !== postId) : [...current, postId]);
+    updateSocialPost(postId, (post) => ({ ...post, likes: Math.max(0, post.likes + (wasLiked ? -1 : 1)) }));
+    const post = socialPosts.find((item) => item.id === postId);
+    if (!wasLiked) {
+      createNotification({
+        audience: post?.authorRole === 'company' ? 'company' : 'jobseeker',
+        category: 'interaksi',
+        title: 'Postingan Disukai',
+        description: `${user.name} menyukai postingan ${post?.authorName ?? 'Anda'}.`,
+      });
+    }
+  };
+
+  const addSocialComment = (postId: string, text: string) => {
+    updateSocialPost(postId, (post) => ({
+      ...post,
+      comments: [
+        ...post.comments,
+        { id: `comment-${Date.now()}`, authorName: user.name, text, createdAt: 'Baru saja' },
+      ],
+    }));
+    const post = socialPosts.find((item) => item.id === postId);
+    createNotification({
+      audience: post?.authorRole === 'company' ? 'company' : 'jobseeker',
+      category: 'komentar',
+      title: 'Komentar Baru',
+      description: `${user.name} mengomentari postingan ${post?.authorName ?? 'Anda'}.`,
+    });
+  };
+
+  const shareSocialPost = (postId: string) => {
+    updateSocialPost(postId, (post) => ({ ...post, shares: post.shares + 1 }));
+    const post = socialPosts.find((item) => item.id === postId);
+    createNotification({
+      audience: post?.authorRole === 'company' ? 'company' : 'jobseeker',
+      category: 'interaksi',
+      title: 'Postingan Dibagikan',
+      description: `${user.name} membagikan postingan ${post?.authorName ?? 'Anda'}.`,
+    });
   };
 
   const addJobComment = () => {
     if (!selectedJob || !commentText.trim()) return;
-    const newComment = {
-      id: Date.now(),
-      author: 'John Doe',
-      text: commentText.trim(),
-    };
-
-    setCommentsByJob((current) => ({
-      ...current,
-      [selectedJob.id]: [...(current[selectedJob.id] ?? []), newComment],
-    }));
+    addSocialComment(selectedJob.postId, commentText.trim());
     setCommentText('');
   };
 
@@ -230,6 +193,34 @@ function HomeContent({ user, onApplied }: { user: { name: string; email: string 
     };
 
     saveApplication(application);
+    upsertChat({
+      id: `application-${selectedJob.id}-${user.email}`,
+      companyName: selectedJob.company,
+      jobseekerName: user.name,
+      jobseekerRole: 'Frontend Developer',
+      avatarUrl: '/dashboard-images/avatar-company.svg',
+      unreadFor: 'company',
+      messages: [
+        {
+          id: `message-${Date.now()}`,
+          sender: 'jobseeker',
+          text: `${user.name} mengirim lamaran untuk posisi ${selectedJob.title}.`,
+          time: 'Baru saja',
+        },
+      ],
+    });
+    createNotification({
+      audience: 'company',
+      category: 'pelamar',
+      title: 'Pelamar Baru',
+      description: `${user.name} melamar posisi ${selectedJob.title}.`,
+    });
+    createNotification({
+      audience: 'jobseeker',
+      category: 'lamaran',
+      title: 'Lamaran Terkirim',
+      description: `Lamaran Anda untuk ${selectedJob.title} berhasil dikirim.`,
+    });
     setAppliedJobIds((current) => current.includes(selectedJob.id) ? current : [...current, selectedJob.id]);
     setSelectedJob(null);
     onApplied();
@@ -242,23 +233,26 @@ function HomeContent({ user, onApplied }: { user: { name: string; email: string 
         <p className="text-xs text-gray-500 mt-1">Rekomendasi lowongan yang cocok dengan profilmu.</p>
       </div>
       <div className="space-y-3">
-        {jobs.map((job) => (
-          <article key={job.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h2 className="text-sm font-bold text-gray-900 truncate">{job.title}</h2>
-                <p className="text-xs text-gray-500 mt-1">{job.company} - {job.location}</p>
-              </div>
-              <span className="rounded-full bg-blue-50 text-blue-900 px-2 py-1 text-[11px] font-bold shrink-0">{job.type}</span>
-            </div>
-            <div className="flex items-center justify-between border-t border-gray-100 pt-3">
-              <span className="text-xs font-semibold text-green-700">Lamaran dibuka</span>
-              <button type="button" onClick={() => setSelectedJob(job)} className="rounded-lg bg-blue-900 text-white px-3 py-2 text-xs font-bold hover:bg-blue-800">Lihat Detail</button>
-            </div>
-          </article>
-        ))}
+        {socialPosts.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 text-center">
+            <h2 className="text-sm font-bold text-gray-900">Belum ada postingan</h2>
+            <p className="text-xs text-gray-500 mt-1">Postingan akan muncul setelah perusahaan atau pencari kerja menginput data.</p>
+          </div>
+        ) : (
+          socialPosts.map((post) => (
+            <SocialPostCard
+              key={post.id}
+              post={post}
+              currentUserName={user.name}
+              isLiked={likedSocialPosts.includes(post.id)}
+              onLike={toggleSocialLike}
+              onComment={addSocialComment}
+              onShare={shareSocialPost}
+              onViewJobDetails={(jobPost) => setSelectedJob(socialPostToJobPost(jobPost))}
+            />
+          ))
+        )}
       </div>
-
       {selectedJob && (
         <div className="fixed inset-0 z-60 bg-black/40 px-4 py-6 flex items-end sm:items-center justify-center">
           <section className="bg-white w-full max-w-2xl max-h-[88vh] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden">
@@ -267,7 +261,7 @@ function HomeContent({ user, onApplied }: { user: { name: string; email: string 
                 <div className="min-w-0">
                   <p className="text-[11px] font-bold text-green-700 mb-1">Lamaran dibuka</p>
                   <h2 className="text-lg font-bold text-blue-900 leading-tight">{selectedJob.title}</h2>
-                  <p className="text-xs text-gray-500 mt-1">{selectedJob.company} - {selectedJob.location} - {selectedJob.type}</p>
+                  <p className="text-xs text-gray-500 mt-1">{selectedJob.company}</p>
                 </div>
                 <button type="button" onClick={() => setSelectedJob(null)} className="shrink-0 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-bold text-gray-600 hover:bg-gray-200">Tutup</button>
               </div>
@@ -275,61 +269,18 @@ function HomeContent({ user, onApplied }: { user: { name: string; email: string 
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4 text-sm text-gray-700">
               <section className="space-y-2">
-                <h3 className="text-sm font-bold text-gray-900">Deskripsi Pekerjaan</h3>
-                <p className="text-xs leading-relaxed">{selectedJob.description}</p>
-                <div className="rounded-xl bg-blue-50 border border-blue-100 p-3">
-                  <p className="text-xs font-bold text-blue-900">Informasi tambahan</p>
-                  <p className="text-xs text-blue-900/80 mt-1 leading-relaxed">{selectedJob.extraInfo}</p>
-                </div>
+                <h3 className="text-sm font-bold text-gray-900">Deskripsi Lamaran</h3>
+                <p className="text-xs leading-relaxed whitespace-pre-wrap">{selectedJob.description}</p>
               </section>
-
-              <section className="space-y-2">
-                <h3 className="text-sm font-bold text-gray-900">Tanggung Jawab Utama</h3>
-                <ul className="space-y-1.5 text-xs leading-relaxed list-disc pl-5">
-                  {selectedJob.responsibilities.map((item) => <li key={item}>{item}</li>)}
-                </ul>
-              </section>
-
-              <section className="space-y-2">
-                <h3 className="text-sm font-bold text-gray-900">Kualifikasi</h3>
-                <ul className="space-y-1.5 text-xs leading-relaxed list-disc pl-5">
-                  {selectedJob.requirements.map((item) => <li key={item}>{item}</li>)}
-                </ul>
-              </section>
-
-              <section className="space-y-2">
-                <h3 className="text-sm font-bold text-gray-900">Syarat Kualifikasi</h3>
-                <ul className="space-y-1.5 text-xs leading-relaxed list-disc pl-5">
-                  {selectedJob.qualificationTerms.map((item) => <li key={item}>{item}</li>)}
-                </ul>
-              </section>
-
-              <div className="rounded-xl border border-gray-200 p-3">
-                <p className="text-xs font-bold text-gray-900">Tenggat Waktu Lamaran</p>
-                <p className="text-xs text-gray-600 mt-1">{selectedJob.deadline}</p>
-              </div>
 
               <div className="flex items-center gap-2 border-y border-gray-100 py-2">
                 <button type="button" onClick={() => toggleJobLike(selectedJob.id)} className={`flex-1 rounded-lg py-2 text-xs font-bold hover:bg-gray-50 ${isSelectedJobLiked ? 'text-blue-700' : 'text-gray-500'}`}>
                   {isSelectedJobLiked ? 'Disukai' : 'Like'}
                 </button>
-                <span className="text-xs text-gray-400">{selectedJobComments.length} Komentar</span>
+                <button type="button" onClick={() => shareSocialPost(selectedJob.postId)} className="flex-1 rounded-lg py-2 text-xs font-bold text-gray-500 hover:bg-gray-50">Bagikan</button>
               </div>
 
               <section className="space-y-2">
-                <h3 className="text-sm font-bold text-gray-900">Komentar</h3>
-                <div className="space-y-2">
-                  {selectedJobComments.length === 0 ? (
-                    <p className="text-xs text-gray-500 rounded-xl bg-gray-50 p-3">Belum ada komentar.</p>
-                  ) : (
-                    selectedJobComments.map((comment) => (
-                      <div key={comment.id} className="rounded-xl bg-gray-50 border border-gray-100 p-3">
-                        <p className="text-xs font-bold text-gray-900">{comment.author}</p>
-                        <p className="text-xs text-gray-600 mt-1 leading-relaxed">{comment.text}</p>
-                      </div>
-                    ))
-                  )}
-                </div>
                 <div className="flex gap-2">
                   <input
                     value={commentText}
@@ -358,73 +309,187 @@ function HomeContent({ user, onApplied }: { user: { name: string; email: string 
   );
 }
 
-function PostingContent({ user }: { user: { name: string } }) {
+function PostingContent({ user }: { user: { name: string; email: string } }) {
   const [postText, setPostText] = useState('');
-  const [likedPosts, setLikedPosts] = useState<number[]>([]);
+  const [imageUrl, setImageUrl] = useState('');
+  const [likedPosts, setLikedPosts] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'feed' | 'kelola'>('feed');
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
-  const [timelinePosts, setTimelinePosts] = useState<TimelinePost[]>([
-    {
-      id: 1,
-      nama: 'Siti Aminah',
-      waktu: '3 jam yang lalu',
-      konten: 'Luar biasa! Hari ini tim Tokopedia kedatangan banyak talenta muda berbakat di acara Tech Inflow. Terima kasih buat teman-teman yang sudah mampir ke booth kami!',
-      likes: 42,
-      comments: 12,
-      isUser: false,
-    },
-    {
-      id: 2,
-      nama: user.name,
-      waktu: 'Kemarin',
-      konten: 'Sedang mencari peluang baru di bidang Frontend Development. Jika ada rekan-rekan yang memiliki info lowongan, boleh kabari ya! Terima kasih.',
-      likes: 15,
-      comments: 3,
-      isUser: true,
-    },
-  ]);
+  const [posts, setPosts] = useState<SocialPost[]>(() => readSocialPosts());
+  const [appliedJobIds, setAppliedJobIds] = useState<number[]>(() => (
+    readApplications().filter((application) => application.applicantEmail === user.email).map((application) => application.jobId)
+  ));
+
+  const handleImageChange = (file: File | undefined) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setImageUrl(typeof reader.result === 'string' ? reader.result : '');
+    reader.readAsDataURL(file);
+  };
+
+  useEffect(() => {
+    const syncPosts = () => setPosts(readSocialPosts());
+
+    window.addEventListener(SOCIAL_POSTS_UPDATED_EVENT, syncPosts);
+    window.addEventListener('storage', syncPosts);
+    return () => {
+      window.removeEventListener(SOCIAL_POSTS_UPDATED_EVENT, syncPosts);
+      window.removeEventListener('storage', syncPosts);
+    };
+  }, []);
+
+  useEffect(() => {
+    const syncApplications = () => {
+      setAppliedJobIds(readApplications().filter((application) => application.applicantEmail === user.email).map((application) => application.jobId));
+    };
+
+    syncApplications();
+    window.addEventListener(APPLICATIONS_UPDATED_EVENT, syncApplications);
+    window.addEventListener('storage', syncApplications);
+    return () => {
+      window.removeEventListener(APPLICATIONS_UPDATED_EVENT, syncApplications);
+      window.removeEventListener('storage', syncApplications);
+    };
+  }, [user.email]);
 
   const handleCreatePost = () => {
     if (!postText.trim()) return;
-    setTimelinePosts([
-      {
-        id: Date.now(),
-        nama: user.name,
-        waktu: 'Baru saja',
-        konten: postText,
-        likes: 0,
-        comments: 0,
-        isUser: true,
-      },
-      ...timelinePosts,
-    ]);
+    createSocialPost({
+      id: `jobseeker-${Date.now()}`,
+      authorName: user.name,
+      authorRole: 'jobseeker',
+      type: 'pencari-kerja',
+      content: postText.trim(),
+      createdAt: 'Baru saja',
+      likes: 0,
+      shares: 0,
+      comments: [],
+      imageUrl: imageUrl || undefined,
+    });
+    createNotification({
+      audience: 'company',
+      category: 'posting',
+      title: 'Postingan Pencari Kerja Baru',
+      description: `${user.name} membuat postingan baru di feed.`,
+    });
     setPostText('');
+    setImageUrl('');
     setActiveTab('feed');
   };
 
-  const toggleLike = (postId: number) => {
-    setLikedPosts((current) => current.includes(postId) ? current.filter((id) => id !== postId) : [...current, postId]);
-  };
-
-  const handleDeletePost = (id: number) => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus postingan ini?')) {
-      setTimelinePosts(timelinePosts.filter((post) => post.id !== id));
+  const toggleLike = (postId: string) => {
+    const wasLiked = likedPosts.includes(postId);
+    setLikedPosts((current) => wasLiked ? current.filter((id) => id !== postId) : [...current, postId]);
+    updateSocialPost(postId, (post) => ({ ...post, likes: Math.max(0, post.likes + (wasLiked ? -1 : 1)) }));
+    const post = posts.find((item) => item.id === postId);
+    if (!wasLiked) {
+      createNotification({
+        audience: post?.authorRole === 'company' ? 'company' : 'jobseeker',
+        category: 'interaksi',
+        title: 'Postingan Disukai',
+        description: `${user.name} menyukai postingan ${post?.authorName ?? 'Anda'}.`,
+      });
     }
   };
 
-  const startEditPost = (post: TimelinePost) => {
-    setEditingId(post.id);
-    setEditContent(post.konten);
+  const handleDeletePost = (id: string) => {
+    if (window.confirm('Apakah Anda yakin ingin menghapus postingan ini?')) {
+      deleteSocialPost(id);
+    }
   };
 
-  const saveEditPost = (id: number) => {
+  const addComment = (postId: string, text: string) => {
+    updateSocialPost(postId, (post) => ({
+      ...post,
+      comments: [
+        ...post.comments,
+        { id: `comment-${Date.now()}`, authorName: user.name, text, createdAt: 'Baru saja' },
+      ],
+    }));
+    const post = posts.find((item) => item.id === postId);
+    createNotification({
+      audience: post?.authorRole === 'company' ? 'company' : 'jobseeker',
+      category: 'komentar',
+      title: 'Komentar Baru',
+      description: `${user.name} mengomentari postingan ${post?.authorName ?? 'Anda'}.`,
+    });
+  };
+
+  const sharePost = (postId: string) => {
+    updateSocialPost(postId, (post) => ({ ...post, shares: post.shares + 1 }));
+    const post = posts.find((item) => item.id === postId);
+    createNotification({
+      audience: post?.authorRole === 'company' ? 'company' : 'jobseeker',
+      category: 'interaksi',
+      title: 'Postingan Dibagikan',
+      description: `${user.name} membagikan postingan ${post?.authorName ?? 'Anda'}.`,
+    });
+  };
+
+  const applyToSocialJob = (post: SocialPost) => {
+    const job = socialPostToJobPost(post);
+    const application: JobApplication = {
+      id: `${user.email}-${job.id}`,
+      jobId: job.id,
+      jobTitle: job.title,
+      company: job.company,
+      location: job.location,
+      type: job.type,
+      applicantName: user.name,
+      applicantEmail: user.email,
+      applicantRole: 'Frontend Developer',
+      avatarUrl: '/dashboard-images/avatar-company.svg',
+      submittedAt: 'Baru saja',
+      status: 'Lamaran terkirim',
+      note: 'CV dan portofolio sudah diupload. Menunggu perusahaan meninjau lamaran.',
+      uploadedDocuments: ['CV_John_Doe.pdf', 'Portfolio_John_Doe.pdf'],
+    };
+
+    saveApplication(application);
+    upsertChat({
+      id: `application-${job.id}-${user.email}`,
+      companyName: job.company,
+      jobseekerName: user.name,
+      jobseekerRole: 'Frontend Developer',
+      avatarUrl: '/dashboard-images/avatar-company.svg',
+      unreadFor: 'company',
+      messages: [
+        {
+          id: `message-${Date.now()}`,
+          sender: 'jobseeker',
+          text: `${user.name} mengirim lamaran untuk posisi ${job.title}.`,
+          time: 'Baru saja',
+        },
+      ],
+    });
+    createNotification({
+      audience: 'company',
+      category: 'pelamar',
+      title: 'Pelamar Baru',
+      description: `${user.name} melamar posisi ${job.title}.`,
+    });
+    createNotification({
+      audience: 'jobseeker',
+      category: 'lamaran',
+      title: 'Lamaran Terkirim',
+      description: `Lamaran Anda untuk ${job.title} berhasil dikirim.`,
+    });
+    setAppliedJobIds((current) => current.includes(job.id) ? current : [...current, job.id]);
+  };
+
+  const startEditPost = (post: SocialPost) => {
+    setEditingId(post.id);
+    setEditContent(post.content);
+  };
+
+  const saveEditPost = (id: string) => {
     if (!editContent.trim()) return;
-    setTimelinePosts(timelinePosts.map((post) => post.id === id ? { ...post, konten: editContent } : post));
+    updateSocialPost(id, (post) => ({ ...post, content: editContent.trim() }));
     setEditingId(null);
   };
 
-  const userPosts = timelinePosts.filter((post) => post.isUser);
+  const userPosts = posts.filter((post) => post.authorName === user.name);
 
   return (
     <div className="space-y-4">
@@ -456,38 +521,36 @@ function PostingContent({ user }: { user: { name: string } }) {
               className="w-full text-sm text-gray-800 placeholder-gray-400 focus:outline-none resize-none rounded-xl bg-gray-50 border border-gray-200 p-3"
               placeholder={`Apa yang Anda pikirkan, ${user.name.split(' ')[0]}?`}
             />
+            <label className="block rounded-xl border border-dashed border-gray-300 bg-gray-50 p-3 text-xs font-semibold text-gray-600 cursor-pointer hover:bg-gray-100">
+              <input type="file" accept="image/*" onChange={(event) => handleImageChange(event.target.files?.[0])} className="hidden" />
+              {imageUrl ? 'Gambar siap diunggah' : 'Tambahkan gambar'}
+            </label>
             <button type="button" onClick={handleCreatePost} disabled={!postText.trim()} className="w-full bg-blue-900 hover:bg-blue-800 text-white py-2 rounded-lg font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed">
               Kirim Postingan
             </button>
           </section>
 
           <div className="space-y-3">
-            {timelinePosts.map((post) => {
-              const isLiked = likedPosts.includes(post.id);
-              return (
-                <article key={post.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-sm text-white ${post.isUser ? 'bg-blue-900' : 'bg-orange-700'}`}>
-                      {post.nama.split(' ').map((name) => name[0]).join('').slice(0, 2)}
-                    </div>
-                    <div>
-                      <h2 className="text-sm font-bold text-gray-900">{post.nama}</h2>
-                      <p className="text-[11px] text-gray-400 font-medium">{post.waktu} - Publik</p>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{post.konten}</p>
-                  <div className="flex justify-between items-center text-xs text-gray-400 border-b border-gray-100 pb-2 font-medium">
-                    <span>{post.likes + (isLiked ? 1 : 0)} Suka</span>
-                    <span>{post.comments} Komentar</span>
-                  </div>
-                  <div className="flex justify-between items-center pt-1 text-xs font-bold text-gray-500">
-                    <button type="button" onClick={() => toggleLike(post.id)} className={`flex-1 hover:bg-gray-50 py-2 rounded-lg ${isLiked ? 'text-blue-700' : ''}`}>Suka</button>
-                    <button type="button" className="flex-1 hover:bg-gray-50 py-2 rounded-lg">Komentar</button>
-                    <button type="button" className="flex-1 hover:bg-gray-50 py-2 rounded-lg">Bagikan</button>
-                  </div>
-                </article>
-              );
-            })}
+            {posts.length === 0 ? (
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 text-center">
+                <h3 className="text-sm font-bold text-gray-900">Belum ada postingan</h3>
+                <p className="text-xs text-gray-500 mt-1">Postingan akan muncul setelah Anda atau perusahaan menginput data.</p>
+              </div>
+            ) : (
+              posts.map((post) => (
+                <SocialPostCard
+                  key={post.id}
+                  post={post}
+                  currentUserName={user.name}
+                  isLiked={likedPosts.includes(post.id)}
+                  onLike={toggleLike}
+                  onComment={addComment}
+                  onShare={sharePost}
+                  onApplyJob={applyToSocialJob}
+                  isJobApplied={post.type === 'lowongan' ? appliedJobIds.includes(getSocialJobId(post.id)) : false}
+                />
+              ))
+            )}
           </div>
         </>
       )}
@@ -501,33 +564,37 @@ function PostingContent({ user }: { user: { name: string } }) {
             </div>
           ) : (
             userPosts.map((post) => (
-              <article key={post.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 space-y-3">
-                <div className="flex justify-between items-start gap-3 border-b border-gray-100 pb-3">
-                  <div>
-                    <h2 className="text-sm font-bold text-gray-900">Diposting pada: {post.waktu}</h2>
-                    <p className="text-xs text-gray-500 mt-0.5">{post.likes} Suka - {post.comments} Komentar</p>
+              <SocialPostCard
+                key={post.id}
+                post={post}
+                currentUserName={user.name}
+                isLiked={likedPosts.includes(post.id)}
+                onLike={toggleLike}
+                onComment={addComment}
+                onShare={sharePost}
+                onApplyJob={applyToSocialJob}
+                isJobApplied={post.type === 'lowongan' ? appliedJobIds.includes(getSocialJobId(post.id)) : false}
+                actions={editingId !== post.id && (
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => startEditPost(post)} className="text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg">Edit</button>
+                    <button type="button" onClick={() => handleDeletePost(post.id)} className="text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg">Hapus</button>
                   </div>
-                  {editingId !== post.id && (
-                    <div className="flex items-center gap-2">
-                      <button type="button" onClick={() => startEditPost(post)} className="text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg">Edit</button>
-                      <button type="button" onClick={() => handleDeletePost(post.id)} className="text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg">Hapus</button>
-                    </div>
-                  )}
-                </div>
-
-                {editingId === post.id ? (
-                  <div className="space-y-3">
-                    <textarea value={editContent} onChange={(event) => setEditContent(event.target.value)} rows={4} className="w-full text-sm text-gray-800 border border-blue-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-100 resize-none" />
-                    <div className="flex justify-end gap-2">
-                      <button type="button" onClick={() => setEditingId(null)} className="text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg">Batal</button>
-                      <button type="button" onClick={() => saveEditPost(post.id)} className="text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 px-4 py-2 rounded-lg">Simpan Perubahan</button>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{post.konten}</p>
                 )}
-              </article>
+              />
             ))
+          )}
+
+          {editingId && (
+            <section className="fixed inset-0 z-[70] bg-black/40 px-4 py-6 flex items-end sm:items-center justify-center">
+              <div className="bg-white w-full max-w-lg rounded-2xl p-4 space-y-3">
+                <h2 className="text-sm font-bold text-gray-900">Edit Postingan</h2>
+                <textarea value={editContent} onChange={(event) => setEditContent(event.target.value)} rows={5} className="w-full text-sm text-gray-800 border border-blue-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-100 resize-none" />
+                <div className="flex justify-end gap-2">
+                  <button type="button" onClick={() => setEditingId(null)} className="text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg">Batal</button>
+                  <button type="button" onClick={() => saveEditPost(editingId)} className="text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 px-4 py-2 rounded-lg">Simpan Perubahan</button>
+                </div>
+              </div>
+            </section>
           )}
         </div>
       )}
@@ -537,11 +604,20 @@ function PostingContent({ user }: { user: { name: string } }) {
 
 function NotifikasiContent() {
   const [filterAktif, setFilterAktif] = useState('semua');
-  const listNotifikasi = [
-    { id: 1, kategori: 'lamaran', judul: 'Lamaran Ditinjau', deskripsi: 'CV Anda untuk posisi UI/UX Designer di GoTo Group telah dibuka dan ditinjau oleh HRD.', waktu: '10 menit yang lalu', isNew: true },
-    { id: 2, kategori: 'sistem', judul: 'Keamanan Akun', deskripsi: 'Kata sandi akun Anda berhasil diperbarui. Jika ini bukan Anda, segera hubungi pusat bantuan.', waktu: '1 jam yang lalu', isNew: false },
-    { id: 3, kategori: 'lamaran', judul: 'Undangan Wawancara', deskripsi: 'PT Teknologi Masa Depan mengundang Anda menghadiri wawancara kerja. Cek menu kotak pesan!', waktu: 'Kemarin', isNew: false },
-  ];
+  const [notifications, setNotifications] = useState<DashboardNotification[]>(() => readNotifications('jobseeker'));
+
+  useEffect(() => {
+    const syncNotifications = () => setNotifications(readNotifications('jobseeker'));
+
+    window.addEventListener(NOTIFICATIONS_UPDATED_EVENT, syncNotifications);
+    window.addEventListener('storage', syncNotifications);
+    return () => {
+      window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, syncNotifications);
+      window.removeEventListener('storage', syncNotifications);
+    };
+  }, []);
+
+  const visibleNotifications = notifications.filter((notif) => filterAktif === 'semua' || notif.category === filterAktif);
 
   return (
     <div className="space-y-4">
@@ -554,15 +630,22 @@ function NotifikasiContent() {
         ))}
       </div>
       <div className="space-y-2">
-        {listNotifikasi.filter((notif) => filterAktif === 'semua' || notif.kategori === filterAktif).map((notif) => (
-          <article key={notif.id} className={`p-4 rounded-xl border shadow-sm ${notif.isNew ? 'bg-blue-50/40 border-blue-100' : 'bg-white border-gray-200'}`}>
-            <div className="flex justify-between gap-3 mb-1">
-              <h2 className="text-sm font-bold text-gray-900">{notif.judul}</h2>
-              <span className="text-[10px] text-gray-400 shrink-0">{notif.waktu}</span>
-            </div>
-            <p className="text-xs text-gray-600">{notif.deskripsi}</p>
-          </article>
-        ))}
+        {visibleNotifications.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 text-center">
+            <h2 className="text-sm font-bold text-gray-900">Belum ada notifikasi</h2>
+            <p className="text-xs text-gray-500 mt-1">Notifikasi akan muncul ketika ada interaksi baru.</p>
+          </div>
+        ) : (
+          visibleNotifications.map((notif) => (
+            <article key={notif.id} className={`p-4 rounded-xl border shadow-sm ${notif.isNew ? 'bg-blue-50/40 border-blue-100' : 'bg-white border-gray-200'}`}>
+              <div className="flex justify-between gap-3 mb-1">
+                <h2 className="text-sm font-bold text-gray-900">{notif.title}</h2>
+                <span className="text-[10px] text-gray-400 shrink-0">{notif.createdAt}</span>
+              </div>
+              <p className="text-xs text-gray-600">{notif.description}</p>
+            </article>
+          ))
+        )}
       </div>
     </div>
   );
@@ -570,55 +653,32 @@ function NotifikasiContent() {
 
 function PekerjaanContent({ user }: { user: { email: string } }) {
   const [uploadedApplications, setUploadedApplications] = useState<JobApplication[]>([]);
-  const applications = [
-    {
-      id: 1,
-      position: 'Frontend Developer',
-      company: 'PT Teknologi Masa Depan',
-      submittedAt: 'Dikirim 2 hari yang lalu',
-      status: 'Menunggu pesan perusahaan',
-      note: 'CV dan portofolio sudah diterima. Perusahaan akan menghubungi melalui kotak pesan jika profil sesuai.',
-    },
-    {
-      id: 2,
-      position: 'UI/UX Designer',
-      company: 'GoTo Group',
-      submittedAt: 'Dikirim kemarin',
-      status: 'Sedang ditinjau HRD',
-      note: 'Lamaran sedang masuk tahap seleksi awal. Pantau kotak pesan untuk undangan berikutnya.',
-    },
-    {
-      id: 3,
-      position: 'Data Analyst',
-      company: 'Shopee Indonesia',
-      submittedAt: 'Dikirim hari ini',
-      status: 'Menunggu konfirmasi',
-      note: 'Lamaran berhasil diserahkan kepada perusahaan dan belum ada pesan baru.',
-    },
-  ];
-  const allApplications = [
-    ...uploadedApplications.map((application) => ({
-      id: application.id,
-      position: application.jobTitle,
-      company: application.company,
-      submittedAt: application.submittedAt,
-      status: application.status,
-      note: `${application.note} Dokumen: ${application.uploadedDocuments.join(', ')}.`,
-      badge: 'Terkirim',
-    })),
-    ...applications.map((application) => ({ ...application, badge: 'Pending' })),
-  ];
+  const [activeJobIds, setActiveJobIds] = useState<number[]>(() => (
+    readSocialPosts().filter((post) => post.type === 'lowongan').map((post) => getSocialJobId(post.id))
+  ));
+  const allApplications = uploadedApplications.filter((application) => activeJobIds.includes(application.jobId)).map((application) => ({
+    id: application.id,
+    position: application.jobTitle,
+    company: application.company,
+    submittedAt: application.submittedAt,
+    status: application.status,
+    note: `${application.note} Dokumen: ${application.uploadedDocuments.join(', ')}.`,
+    badge: 'Terkirim',
+  }));
 
   useEffect(() => {
     const syncApplications = () => {
       setUploadedApplications(readApplications().filter((application) => application.applicantEmail === user.email));
+      setActiveJobIds(readSocialPosts().filter((post) => post.type === 'lowongan').map((post) => getSocialJobId(post.id)));
     };
 
     syncApplications();
     window.addEventListener(APPLICATIONS_UPDATED_EVENT, syncApplications);
+    window.addEventListener(SOCIAL_POSTS_UPDATED_EVENT, syncApplications);
     window.addEventListener('storage', syncApplications);
     return () => {
       window.removeEventListener(APPLICATIONS_UPDATED_EVENT, syncApplications);
+      window.removeEventListener(SOCIAL_POSTS_UPDATED_EVENT, syncApplications);
       window.removeEventListener('storage', syncApplications);
     };
   }, [user.email]);
@@ -630,66 +690,146 @@ function PekerjaanContent({ user }: { user: { email: string } }) {
         <p className="text-xs text-gray-500 mt-1">Lamaran yang sudah diserahkan kepada perusahaan. Tinggal tunggu pesan dari rekruter.</p>
       </div>
       <div className="space-y-3">
-        {allApplications.map((application) => (
-          <article key={application.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h2 className="text-sm font-bold text-gray-900 truncate">{application.position}</h2>
-                <p className="text-xs text-gray-500 mt-1">{application.company} - {application.submittedAt}</p>
+        {allApplications.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 text-center">
+            <h2 className="text-sm font-bold text-gray-900">Belum ada pekerjaan dilamar</h2>
+            <p className="text-xs text-gray-500 mt-1">Pekerjaan akan muncul setelah Anda menekan Lamar Sekarang pada lowongan.</p>
+          </div>
+        ) : (
+          allApplications.map((application) => (
+            <article key={application.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 className="text-sm font-bold text-gray-900 truncate">{application.position}</h2>
+                  <p className="text-xs text-gray-500 mt-1">{application.company} - {application.submittedAt}</p>
+                </div>
+                <span className="rounded-full bg-yellow-50 text-yellow-700 px-2 py-1 text-[11px] font-bold shrink-0">{application.badge}</span>
               </div>
-              <span className="rounded-full bg-yellow-50 text-yellow-700 px-2 py-1 text-[11px] font-bold shrink-0">{application.badge}</span>
-            </div>
-            <div className="rounded-xl bg-gray-50 border border-gray-100 p-3">
-              <p className="text-xs font-bold text-gray-800">{application.status}</p>
-              <p className="text-xs text-gray-500 mt-1 leading-relaxed">{application.note}</p>
-            </div>
-          </article>
-        ))}
+              <div className="rounded-xl bg-gray-50 border border-gray-100 p-3">
+                <p className="text-xs font-bold text-gray-800">{application.status}</p>
+                <p className="text-xs text-gray-500 mt-1 leading-relaxed">{application.note}</p>
+              </div>
+            </article>
+          ))
+        )}
       </div>
     </div>
   );
 }
 function PesanContent() {
-  const daftarChat: Chat[] = [
-    { id: 1, nama: 'Siti Aminah', perusahaan: 'Tokopedia', pesan: 'Halo John, apakah besok ada waktu untuk sesi interview teknis jam 10 pagi?', waktu: '10.30', unread: true, avatarUrl: '/dashboard-images/avatar-siti.svg' },
-    { id: 2, nama: 'HRD Shopee Indonesia', perusahaan: 'Shopee', pesan: 'Selamat! Anda dinyatakan lolos ke tahap offering letter. Silakan cek email Anda.', waktu: '08.15', unread: true, avatarUrl: '/dashboard-images/avatar-company.svg' },
-  ];
-  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
+  const [draft, setDraft] = useState('');
+  const [chats, setChats] = useState<SharedChat[]>(() => readChats());
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const selectedChat = chats.find((chat) => chat.id === selectedChatId) ?? null;
+
+  useEffect(() => {
+    const syncChats = () => setChats(readChats());
+
+    window.addEventListener(CHATS_UPDATED_EVENT, syncChats);
+    window.addEventListener('storage', syncChats);
+    return () => {
+      window.removeEventListener(CHATS_UPDATED_EVENT, syncChats);
+      window.removeEventListener('storage', syncChats);
+    };
+  }, []);
+
+  const handleSendMessage = () => {
+    if (!selectedChat || !draft.trim()) return;
+    addChatMessage(selectedChat.id, 'jobseeker', draft.trim());
+    createNotification({
+      audience: 'company',
+      category: 'pesan',
+      title: 'Pesan Baru',
+      description: `${selectedChat.jobseekerName} mengirim pesan baru.`,
+    });
+    setDraft('');
+  };
 
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold text-blue-900">Kotak Masuk Chat</h1>
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100 overflow-hidden">
-        {daftarChat.map((chat) => (
-          <button key={chat.id} type="button" onClick={() => setSelectedChat(chat)} className={`w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 ${chat.unread ? 'bg-blue-50/30 border-l-4 border-l-blue-900' : ''}`}>
-            <div className="flex items-center gap-3 overflow-hidden flex-1 pr-4">
-              <Image src={chat.avatarUrl} alt={`Foto ${chat.nama}`} width={44} height={44} className="w-11 h-11 rounded-2xl shrink-0" />
-              <div className="overflow-hidden w-full">
-                <h2 className="text-sm font-bold text-gray-900 truncate">{chat.nama} <span className="text-[10px] text-gray-400 font-normal">- {chat.perusahaan}</span></h2>
-                <p className="text-xs text-gray-500 truncate">{chat.pesan}</p>
+
+      <div className="grid gap-3 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100 overflow-hidden">
+          {chats.length === 0 ? (
+            <div className="p-6 text-center">
+              <h2 className="text-sm font-bold text-gray-900">Belum ada chat</h2>
+              <p className="text-xs text-gray-500 mt-1">Chat akan muncul setelah ada lamaran atau pesan baru.</p>
+            </div>
+          ) : (
+            chats.map((chat) => {
+              const lastMessage = chat.messages.at(-1);
+              const isActive = selectedChatId === chat.id;
+
+              return (
+                <button
+                  key={chat.id}
+                  type="button"
+                  onClick={() => setSelectedChatId(chat.id)}
+                  className={`w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 ${isActive ? 'bg-blue-50 border-l-4 border-l-blue-900' : chat.unreadFor === 'jobseeker' ? 'bg-blue-50/30 border-l-4 border-l-blue-900' : ''}`}
+                >
+                  <div className="flex items-center gap-3 min-w-0 pr-4">
+                    <Image src={chat.avatarUrl} alt={`Foto ${chat.companyName}`} width={44} height={44} className="w-11 h-11 rounded-2xl shrink-0" />
+                    <div className="min-w-0">
+                      <h2 className="text-sm font-bold text-gray-900 truncate">{chat.companyName}</h2>
+                      <p className="text-[10px] text-gray-400 font-normal truncate">{chat.jobseekerRole}</p>
+                      <p className="text-xs text-gray-500 truncate mt-0.5">{lastMessage?.text ?? 'Belum ada pesan'}</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-gray-400 shrink-0">{lastMessage?.time ?? 'Baru saja'}</span>
+                </button>
+              );
+            })
+          )}
+        </div>
+
+        {selectedChat ? (
+          <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden min-h-[520px] flex flex-col">
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 bg-white">
+              <Image src={selectedChat.avatarUrl} alt={`Foto ${selectedChat.companyName}`} width={44} height={44} className="w-11 h-11 rounded-2xl" />
+              <div className="min-w-0">
+                <h2 className="text-sm font-bold text-gray-900 truncate">{selectedChat.companyName}</h2>
+                <p className="text-xs text-gray-500 truncate">Perusahaan - online</p>
               </div>
             </div>
-            <span className="text-[10px] text-gray-400 shrink-0">{chat.waktu}</span>
-          </button>
-        ))}
-      </div>
 
-      {selectedChat && (
-        <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3">
-          <div className="flex items-center gap-3">
-            <Image src={selectedChat.avatarUrl} alt={`Foto ${selectedChat.nama}`} width={44} height={44} className="w-11 h-11 rounded-2xl" />
-            <div>
-              <h2 className="text-sm font-bold text-gray-900">Obrolan dengan {selectedChat.nama}</h2>
-              <p className="text-xs text-gray-500">{selectedChat.perusahaan}</p>
+            <div className="flex-1 overflow-y-auto bg-green-50/50 p-4 space-y-2">
+              {selectedChat.messages.map((message) => {
+                const isJobseeker = message.sender === 'jobseeker';
+
+                return (
+                  <div key={message.id} className={`flex ${isJobseeker ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[82%] rounded-2xl px-3 py-2 shadow-sm ${isJobseeker ? 'bg-blue-900 text-white rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm'}`}>
+                      <p className="text-xs leading-relaxed">{message.text}</p>
+                      <p className={`text-[10px] mt-1 text-right ${isJobseeker ? 'text-blue-100' : 'text-gray-400'}`}>{message.time}</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          </div>
-          <div className="rounded-xl bg-gray-100 p-3 text-xs text-gray-700 leading-relaxed">{selectedChat.pesan}</div>
-          <div className="flex gap-2">
-            <input className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-xs outline-none focus:border-blue-300" placeholder="Tulis balasan..." />
-            <button type="button" className="rounded-lg bg-blue-900 text-white px-4 py-2 text-xs font-bold hover:bg-blue-800">Kirim</button>
-          </div>
-        </section>
-      )}
+
+            <div className="flex gap-2 border-t border-gray-100 bg-white p-3">
+              <input
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') handleSendMessage();
+                }}
+                className="min-w-0 flex-1 rounded-full border border-gray-200 px-4 py-2 text-xs outline-none focus:border-blue-300"
+                placeholder="Tulis pesan..."
+              />
+              <button type="button" onClick={handleSendMessage} className="rounded-full bg-blue-900 text-white px-5 py-2 text-xs font-bold hover:bg-blue-800">Kirim</button>
+            </div>
+          </section>
+        ) : (
+          <section className="bg-white rounded-xl border border-gray-200 shadow-sm min-h-[320px] flex items-center justify-center p-6 text-center">
+            <div>
+              <h2 className="text-sm font-bold text-gray-900">Pilih riwayat chat</h2>
+              <p className="text-xs text-gray-500 mt-1">Klik perusahaan di kotak pesan untuk membuka percakapan.</p>
+            </div>
+          </section>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-export const APPLICATIONS_STORAGE_KEY = 'jobfair_applications';
+export const APPLICATIONS_STORAGE_KEY = 'jobfair_applications_v3';
 export const APPLICATIONS_UPDATED_EVENT = 'jobfair-applications-updated';
 
 export type JobApplication = {
@@ -37,6 +37,13 @@ export function saveApplication(application: JobApplication) {
     application,
     ...existingApplications.filter((item) => item.id !== application.id),
   ];
+
+  window.localStorage.setItem(APPLICATIONS_STORAGE_KEY, JSON.stringify(nextApplications));
+  window.dispatchEvent(new Event(APPLICATIONS_UPDATED_EVENT));
+}
+
+export function deleteApplicationsByJobId(jobId: number) {
+  const nextApplications = readApplications().filter((application) => application.jobId !== jobId);
 
   window.localStorage.setItem(APPLICATIONS_STORAGE_KEY, JSON.stringify(nextApplications));
   window.dispatchEvent(new Event(APPLICATIONS_UPDATED_EVENT));
