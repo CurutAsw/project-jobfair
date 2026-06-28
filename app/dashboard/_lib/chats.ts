@@ -38,9 +38,26 @@ function writeChats(chats: SharedChat[]) {
   window.dispatchEvent(new Event(CHATS_UPDATED_EVENT));
 }
 
+function normalizeChatParticipant(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function isSameChatParticipants(first: SharedChat, second: SharedChat) {
+  return normalizeChatParticipant(first.companyName) === normalizeChatParticipant(second.companyName)
+    && normalizeChatParticipant(first.jobseekerName) === normalizeChatParticipant(second.jobseekerName);
+}
+
 export function upsertChat(chat: SharedChat) {
   const chats = readChats();
-  writeChats([chat, ...chats.filter((item) => item.id !== chat.id)]);
+  const existingChat = chats.find((item) => item.id === chat.id || isSameChatParticipants(item, chat));
+
+  if (existingChat) {
+    writeChats([existingChat, ...chats.filter((item) => item.id !== existingChat.id)]);
+    return { chat: existingChat, isNew: false };
+  }
+
+  writeChats([chat, ...chats]);
+  return { chat, isNew: true };
 }
 
 export function addChatMessage(chatId: string, sender: ChatParticipant, text: string) {

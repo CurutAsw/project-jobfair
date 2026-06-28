@@ -275,7 +275,7 @@ function HomeContent({ user, onApplied }: { user: { name: string; email: string 
 
               <div className="flex items-center gap-2 border-y border-gray-100 py-2">
                 <button type="button" onClick={() => toggleJobLike(selectedJob.id)} className={`flex-1 rounded-lg py-2 text-xs font-bold hover:bg-gray-50 ${isSelectedJobLiked ? 'text-blue-700' : 'text-gray-500'}`}>
-                  {isSelectedJobLiked ? 'Disukai' : 'Like'}
+                  {isSelectedJobLiked ? 'Disukai' : 'Suka'}
                 </button>
                 <button type="button" onClick={() => shareSocialPost(selectedJob.postId)} className="flex-1 rounded-lg py-2 text-xs font-bold text-gray-500 hover:bg-gray-50">Bagikan</button>
               </div>

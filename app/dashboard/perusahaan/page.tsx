@@ -33,7 +33,7 @@ export default function PerusahaanDashboard() {
 
   const openCandidateChat = (candidate: Candidate) => {
     const chatId = `candidate-${candidate.id}`;
-    upsertChat({
+    const result = upsertChat({
       id: chatId,
       companyName: 'PT Teknologi Masa Depan',
       jobseekerName: candidate.name,
@@ -49,20 +49,22 @@ export default function PerusahaanDashboard() {
         },
       ],
     });
-    createNotification({
-      audience: 'jobseeker',
-      category: 'pesan',
-      title: 'Pesan Baru',
-      description: `PT Teknologi Masa Depan menghubungi Anda untuk posisi ${candidate.role}.`,
-    });
+    if (result.isNew) {
+      createNotification({
+        audience: 'jobseeker',
+        category: 'pesan',
+        title: 'Pesan Baru',
+        description: `PT Teknologi Masa Depan menghubungi Anda untuk posisi ${candidate.role}.`,
+      });
+    }
 
-    setSelectedChatId(chatId);
+    setSelectedChatId(result.chat.id);
     setActiveTab('pesan');
   };
 
   const openApplicantChat = (application: JobApplication) => {
     const chatId = `application-${application.jobId}-${application.applicantEmail}`;
-    upsertChat({
+    const result = upsertChat({
       id: chatId,
       companyName: application.company,
       jobseekerName: application.applicantName,
@@ -78,14 +80,16 @@ export default function PerusahaanDashboard() {
         },
       ],
     });
-    createNotification({
-      audience: 'jobseeker',
-      category: 'pesan',
-      title: 'Pesan Baru',
-      description: `${application.company} menghubungi Anda tentang lamaran ${application.jobTitle}.`,
-    });
+    if (result.isNew) {
+      createNotification({
+        audience: 'jobseeker',
+        category: 'pesan',
+        title: 'Pesan Baru',
+        description: `${application.company} menghubungi Anda tentang lamaran ${application.jobTitle}.`,
+      });
+    }
 
-    setSelectedChatId(chatId);
+    setSelectedChatId(result.chat.id);
     setActiveTab('pesan');
   };
 
