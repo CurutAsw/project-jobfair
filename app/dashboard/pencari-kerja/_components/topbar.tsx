@@ -1,8 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 interface TopBarProps {
@@ -12,7 +10,6 @@ interface TopBarProps {
 }
 
 export default function TopBar({ activeTab, onProfileClick, onMessengerClick }: TopBarProps) {
-  const router = useRouter();
   const [isFocused, setIsFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -92,9 +89,6 @@ export default function TopBar({ activeTab, onProfileClick, onMessengerClick }: 
       <button type="button" onClick={onMessengerClick} className="hidden sm:flex h-10 rounded-full items-center justify-center gap-2 px-3 text-xs font-bold text-blue-900 hover:bg-blue-50">
         <Image src="/dashboard-images/nav-chat.svg" alt="" width={28} height={28} className="h-6 w-6" />
         Pesan
-      </button>
-      <button type="button" onClick={() => router.push('/login')} className="h-10 rounded-full bg-red-50 px-3 text-xs font-bold text-red-600 hover:bg-red-100">
-        Log out
       </button>
     </header>
   );

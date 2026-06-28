@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import type { Candidate } from './data';
 
-export default function CandidateContent({ candidates, query, filter }: { candidates: Candidate[]; query: string; filter: string }) {
+export default function CandidateContent({ candidates, query, filter, onContact }: { candidates: Candidate[]; query: string; filter: string; onContact: (candidate: Candidate) => void }) {
   return (
     <div className="space-y-4">
       <div>
@@ -31,7 +31,7 @@ export default function CandidateContent({ candidates, query, filter }: { candid
 
             <div className="flex items-center justify-between border-t border-gray-100 pt-3">
               <span className="text-xs font-semibold text-green-700">{candidate.status}</span>
-              <button type="button" className="rounded-lg bg-blue-900 text-white px-3 py-2 text-xs font-bold hover:bg-blue-800">Hubungi</button>
+              <button type="button" onClick={() => onContact(candidate)} className="rounded-lg bg-blue-900 text-white px-3 py-2 text-xs font-bold hover:bg-blue-800">Hubungi</button>
             </div>
           </article>
         ))}

@@ -1,9 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import type { JobApplication } from '../_lib/applications';
 import BottomBar from './_components/bottombar';
 import CandidateContent from './_components/candidate-content';
-import { candidates, type Chat, type CompanyTab } from './_components/data';
+import { candidates, chats, type Candidate, type Chat, type CompanyTab } from './_components/data';
 import JobContent from './_components/job-content';
 import NotificationContent from './_components/notification-content';
 import PostingContent from './_components/posting-content';
@@ -28,12 +29,59 @@ export default function PerusahaanDashboard() {
     });
   }, [filter, query]);
 
+  const openCandidateChat = (candidate: Candidate) => {
+    const existingChat = chats.find((chat) => chat.name === candidate.name);
+    const candidateChat: Chat = existingChat ?? {
+      id: candidate.id,
+      name: candidate.name,
+      role: candidate.role,
+      message: `Halo, kami tertarik dengan profil ${candidate.role} Anda.`,
+      time: 'Baru saja',
+      unread: false,
+      avatarUrl: candidate.avatarUrl,
+      history: [
+        {
+          id: 1,
+          sender: 'company',
+          text: `Halo ${candidate.name}, kami tertarik dengan profil ${candidate.role} Anda.`,
+          time: 'Baru saja',
+        },
+      ],
+    };
+
+    setSelectedChat(candidateChat);
+    setActiveTab('pesan');
+  };
+
+  const openApplicantChat = (application: JobApplication) => {
+    const applicantChat: Chat = {
+      id: 1000 + application.jobId,
+      name: application.applicantName,
+      role: application.applicantRole,
+      message: `Halo ${application.applicantName}, kami sudah menerima lamaran Anda untuk posisi ${application.jobTitle}.`,
+      time: 'Baru saja',
+      unread: false,
+      avatarUrl: application.avatarUrl,
+      history: [
+        {
+          id: 1,
+          sender: 'company',
+          text: `Halo ${application.applicantName}, kami sudah menerima lamaran Anda untuk posisi ${application.jobTitle}.`,
+          time: 'Baru saja',
+        },
+      ],
+    };
+
+    setSelectedChat(applicantChat);
+    setActiveTab('pesan');
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'kandidat':
-        return <CandidateContent candidates={filteredCandidates} query={query} filter={filter} />;
+        return <CandidateContent candidates={filteredCandidates} query={query} filter={filter} onContact={openCandidateChat} />;
       case 'lowongan':
-        return <JobContent />;
+        return <JobContent onContactApplicant={openApplicantChat} />;
       case 'posting':
         return <PostingContent />;
       case 'notifikasi':
@@ -41,7 +89,7 @@ export default function PerusahaanDashboard() {
       case 'pesan':
         return <MessageContent selectedChat={selectedChat} onSelectChat={setSelectedChat} />;
       default:
-        return <CandidateContent candidates={filteredCandidates} query={query} filter={filter} />;
+        return <CandidateContent candidates={filteredCandidates} query={query} filter={filter} onContact={openCandidateChat} />;
     }
   };
 
@@ -50,7 +98,6 @@ export default function PerusahaanDashboard() {
       <Sidebar isOpen={isProfileOpen} onClose={() => setProfileOpen(false)} />
       <TopBar
         query={query}
-        filter={filter}
         onQueryChange={setQuery}
         onFilterChange={setFilter}
         onProfileClick={() => setProfileOpen(true)}

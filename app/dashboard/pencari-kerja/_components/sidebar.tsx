@@ -20,8 +20,8 @@ export default function Sidebar({ isOpen, onClose, user }: SidebarProps) {
 
   return (
     <>
-      <div onClick={onClose} className={`fixed inset-0 bg-black/40 z-[60] transition-opacity ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`} />
-      <aside className={`fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-white text-gray-900 shadow-2xl z-[70] flex flex-col transform transition-transform ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div onClick={onClose} className={`fixed inset-0 bg-black/40 z-60 transition-opacity ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`} />
+      <aside className={`fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-white text-gray-900 shadow-2xl z-70 flex flex-col transform transition-transform ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-5 border-b border-gray-100 bg-gray-50/70 space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-blue-900 text-white rounded-2xl flex items-center justify-center font-bold text-base shrink-0">{getInitials(user?.name)}</div>
@@ -45,17 +45,20 @@ export default function Sidebar({ isOpen, onClose, user }: SidebarProps) {
 
         <nav className="flex-1 p-4 space-y-5 overflow-y-auto">
           <section className="space-y-2">
-            <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Aktivitas Karir</p>
-            {['CV & Portofolio', 'Riwayat Lamaran', 'Lowongan Tersimpan'].map((item) => (
+            <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Aktivitas Profil</p>
+            {['CV & Portofolio', 'Tersimpan', 'Aktivitas Anda', 'Arsip Postingan'].map((item) => (
               <button key={item} type="button" className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-700 hover:bg-blue-50/60">
                 {item}
               </button>
             ))}
-          </section>
-
-          <section className="space-y-2">
-            <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Akun & Pengaturan</p>
-            {['Profil Pencari Kerja', 'Pengaturan Akun', 'Preferensi Notifikasi'].map((item) => (
+            <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Pengaturan Akun</p>
+            {['Profil', 'Pusat Akun', 'Preferensi Notifikasi'].map((item) => (
+              <button key={item} type="button" className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-700 hover:bg-blue-50/60">
+                {item}
+              </button>
+            ))}
+            <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Info & Bantuan</p>
+            {['Bantuan', 'Tentang Kami'].map((item) => (
               <button key={item} type="button" className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-700 hover:bg-blue-50/60">
                 {item}
               </button>

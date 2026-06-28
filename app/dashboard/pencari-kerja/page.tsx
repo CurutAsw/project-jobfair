@@ -2,7 +2,8 @@
 
 import Image from 'next/image';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { APPLICATIONS_UPDATED_EVENT, readApplications, saveApplication, type JobApplication } from '../_lib/applications';
 import BottomBar from './_components/bottombar';
 import Sidebar from './_components/sidebar';
 import TopBar from './_components/topbar';
@@ -15,6 +16,26 @@ type TimelinePost = {
   likes: number;
   comments: number;
   isUser: boolean;
+};
+
+type JobPost = {
+  id: number;
+  title: string;
+  company: string;
+  type: string;
+  location: string;
+  description: string;
+  responsibilities: string[];
+  requirements: string[];
+  qualificationTerms: string[];
+  deadline: string;
+  extraInfo: string;
+};
+
+type JobComment = {
+  id: number;
+  author: string;
+  text: string;
 };
 
 type Chat = {
@@ -39,25 +60,25 @@ export default function PencariKerjaDashboard() {
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
-        return <HomeContent />;
+        return <HomeContent user={currentUser} onApplied={() => setActiveTab('pekerjaan')} />;
       case 'posting':
         return <PostingContent user={currentUser} />;
       case 'notifikasi':
         return <NotifikasiContent />;
       case 'pekerjaan':
-        return <PekerjaanContent />;
+        return <PekerjaanContent user={currentUser} />;
       case 'pesan':
         return <PesanContent />;
       default:
-        return <HomeContent />;
+        return <HomeContent user={currentUser} onApplied={() => setActiveTab('pekerjaan')} />;
     }
   };
 
   return (
-    <div className="h-screen overflow-y-auto bg-gray-100 font-sans flex flex-col [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+    <div className="h-screen overflow-y-auto bg-gray-100 font-sans flex flex-col [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none">
       <Sidebar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} user={currentUser} />
       <TopBar activeTab={activeTab} onProfileClick={() => setSidebarOpen(true)} onMessengerClick={() => setActiveTab('pesan')} />
-      <main className="flex-1 pt-20 pb-28 px-4 max-w-screen-md w-full mx-auto">
+      <main className="flex-1 pt-20 pb-28 px-4 max-w-3xl w-full mx-auto">
         {renderContent()}
       </main>
       <BottomBar activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -65,12 +86,154 @@ export default function PencariKerjaDashboard() {
   );
 }
 
-function HomeContent() {
-  const jobs = [
-    { title: 'Software Engineer 1', company: 'PT Teknologi Masa Depan', type: 'Full-time', location: 'Jakarta' },
-    { title: 'Software Engineer 2', company: 'PT Teknologi Masa Depan', type: 'Hybrid', location: 'Bandung' },
-    { title: 'Software Engineer 3', company: 'PT Teknologi Masa Depan', type: 'Remote', location: 'Indonesia' },
+function HomeContent({ user, onApplied }: { user: { name: string; email: string }; onApplied: () => void }) {
+  const jobs: JobPost[] = [
+    {
+      id: 1,
+      title: 'Software Engineer 1',
+      company: 'PT Teknologi Masa Depan',
+      type: 'Full-time',
+      location: 'Jakarta',
+      description: 'Bergabung dengan tim produk untuk membangun fitur web job fair digital yang stabil, cepat, dan mudah digunakan oleh pencari kerja maupun rekruter.',
+      responsibilities: [
+        'Mengembangkan antarmuka aplikasi menggunakan React, TypeScript, dan Tailwind CSS.',
+        'Bekerja sama dengan tim desain dan backend untuk menerjemahkan kebutuhan produk menjadi fitur siap pakai.',
+        'Melakukan debugging, optimasi performa, dan review kualitas kode sebelum rilis.',
+      ],
+      requirements: [
+        'Memahami JavaScript/TypeScript, React, REST API, dan Git.',
+        'Berpengalaman minimal 1 tahun pada pengembangan frontend atau proyek portofolio yang relevan.',
+        'Mampu membaca desain Figma dan mengubahnya menjadi UI responsif.',
+      ],
+      qualificationTerms: [
+        'Minimal pendidikan D3/S1 Teknik Informatika, Sistem Informasi, atau bidang terkait.',
+        'Usia maksimal 30 tahun.',
+        'Keahlian utama: React, TypeScript, Tailwind CSS, dan dasar UI/UX.',
+        'Wajib melampirkan CV terbaru dan portofolio/GitHub.',
+      ],
+      deadline: '30 Juli 2026',
+      extraInfo: 'Lamaran dibuka untuk kandidat yang siap bekerja onsite di Jakarta dengan proses interview hybrid.',
+    },
+    {
+      id: 2,
+      title: 'Software Engineer 2',
+      company: 'PT Teknologi Masa Depan',
+      type: 'Hybrid',
+      location: 'Bandung',
+      description: 'Posisi ini berfokus pada pengembangan dashboard internal dan integrasi fitur kandidat untuk mendukung proses rekrutmen perusahaan.',
+      responsibilities: [
+        'Membangun modul dashboard, formulir, dan halaman detail lowongan.',
+        'Mengintegrasikan data dari API ke tampilan aplikasi dengan state management yang rapi.',
+        'Menjaga konsistensi komponen UI lintas halaman.',
+      ],
+      requirements: [
+        'Menguasai React, Next.js, dan dasar pengujian UI.',
+        'Memiliki pengalaman membuat aplikasi responsif minimal 1 tahun.',
+        'Terbiasa bekerja dengan workflow Git dan komunikasi lintas tim.',
+      ],
+      qualificationTerms: [
+        'Minimal pendidikan D3/S1 bidang teknologi atau pengalaman setara.',
+        'Usia 21-32 tahun.',
+        'Keahlian utama: Next.js, API integration, dan responsive layout.',
+        'Wajib melampirkan CV dan portofolio proyek.',
+      ],
+      deadline: '15 Agustus 2026',
+      extraInfo: 'Skema kerja hybrid 3 hari WFO Bandung dan 2 hari remote.',
+    },
+    {
+      id: 3,
+      title: 'Software Engineer 3',
+      company: 'PT Teknologi Masa Depan',
+      type: 'Remote',
+      location: 'Indonesia',
+      description: 'Tim platform mencari engineer yang nyaman bekerja remote untuk mengembangkan fitur kolaborasi dan otomasi proses job fair.',
+      responsibilities: [
+        'Merancang dan mengimplementasikan fitur frontend berskala produksi.',
+        'Meningkatkan aksesibilitas, performa, dan stabilitas halaman utama aplikasi.',
+        'Berpartisipasi dalam planning sprint dan dokumentasi teknis.',
+      ],
+      requirements: [
+        'Kuat di fundamental frontend, TypeScript, dan component architecture.',
+        'Berpengalaman bekerja remote dan mampu mengelola komunikasi asinkron.',
+        'Memahami integrasi autentikasi dan pola fetching data modern.',
+      ],
+      qualificationTerms: [
+        'Minimal pendidikan SMA/SMK dengan portofolio kuat atau D3/S1 bidang terkait.',
+        'Usia fleksibel selama memenuhi kompetensi teknis.',
+        'Keahlian utama: TypeScript, Next.js, testing dasar, dan dokumentasi.',
+        'Wajib melampirkan CV, portofolio, dan contoh kode.',
+      ],
+      deadline: '31 Agustus 2026',
+      extraInfo: 'Terbuka untuk kandidat seluruh Indonesia dengan jam kerja fleksibel mengikuti zona WIB.',
+    },
   ];
+  const [selectedJob, setSelectedJob] = useState<JobPost | null>(null);
+  const [likedJobs, setLikedJobs] = useState<number[]>([]);
+  const [savedJobs, setSavedJobs] = useState<number[]>([]);
+  const [appliedJobIds, setAppliedJobIds] = useState<number[]>(() => (
+    readApplications().filter((application) => application.applicantEmail === user.email).map((application) => application.jobId)
+  ));
+  const [commentText, setCommentText] = useState('');
+  const [commentsByJob, setCommentsByJob] = useState<Record<number, JobComment[]>>({
+    1: [
+      { id: 1, author: 'Ayu', text: 'Apakah fresh graduate boleh melamar posisi ini?' },
+      { id: 2, author: 'Rafi', text: 'Informasi portofolio web pribadi sangat membantu, terima kasih.' },
+    ],
+  });
+
+  const selectedJobComments = selectedJob ? commentsByJob[selectedJob.id] ?? [] : [];
+  const isSelectedJobLiked = selectedJob ? likedJobs.includes(selectedJob.id) : false;
+  const isSelectedJobSaved = selectedJob ? savedJobs.includes(selectedJob.id) : false;
+  const isSelectedJobApplied = selectedJob ? appliedJobIds.includes(selectedJob.id) : false;
+
+  const toggleJobLike = (jobId: number) => {
+    setLikedJobs((current) => current.includes(jobId) ? current.filter((id) => id !== jobId) : [...current, jobId]);
+  };
+
+  const toggleSavedJob = (jobId: number) => {
+    setSavedJobs((current) => current.includes(jobId) ? current.filter((id) => id !== jobId) : [...current, jobId]);
+  };
+
+  const addJobComment = () => {
+    if (!selectedJob || !commentText.trim()) return;
+    const newComment = {
+      id: Date.now(),
+      author: 'John Doe',
+      text: commentText.trim(),
+    };
+
+    setCommentsByJob((current) => ({
+      ...current,
+      [selectedJob.id]: [...(current[selectedJob.id] ?? []), newComment],
+    }));
+    setCommentText('');
+  };
+
+  const applyToJob = () => {
+    if (!selectedJob) return;
+
+    const application: JobApplication = {
+      id: `${user.email}-${selectedJob.id}`,
+      jobId: selectedJob.id,
+      jobTitle: selectedJob.title,
+      company: selectedJob.company,
+      location: selectedJob.location,
+      type: selectedJob.type,
+      applicantName: user.name,
+      applicantEmail: user.email,
+      applicantRole: 'Frontend Developer',
+      avatarUrl: '/dashboard-images/avatar-company.svg',
+      submittedAt: 'Baru saja',
+      status: 'Lamaran terkirim',
+      note: 'CV dan portofolio sudah diupload. Menunggu perusahaan meninjau lamaran.',
+      uploadedDocuments: ['CV_John_Doe.pdf', 'Portfolio_John_Doe.pdf'],
+    };
+
+    saveApplication(application);
+    setAppliedJobIds((current) => current.includes(selectedJob.id) ? current : [...current, selectedJob.id]);
+    setSelectedJob(null);
+    onApplied();
+  };
 
   return (
     <div className="space-y-4">
@@ -80,7 +243,7 @@ function HomeContent() {
       </div>
       <div className="space-y-3">
         {jobs.map((job) => (
-          <article key={job.title} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3">
+          <article key={job.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <h2 className="text-sm font-bold text-gray-900 truncate">{job.title}</h2>
@@ -90,11 +253,107 @@ function HomeContent() {
             </div>
             <div className="flex items-center justify-between border-t border-gray-100 pt-3">
               <span className="text-xs font-semibold text-green-700">Lamaran dibuka</span>
-              <button type="button" className="rounded-lg bg-blue-900 text-white px-3 py-2 text-xs font-bold hover:bg-blue-800">Lihat Detail</button>
+              <button type="button" onClick={() => setSelectedJob(job)} className="rounded-lg bg-blue-900 text-white px-3 py-2 text-xs font-bold hover:bg-blue-800">Lihat Detail</button>
             </div>
           </article>
         ))}
       </div>
+
+      {selectedJob && (
+        <div className="fixed inset-0 z-60 bg-black/40 px-4 py-6 flex items-end sm:items-center justify-center">
+          <section className="bg-white w-full max-w-2xl max-h-[88vh] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div className="p-4 border-b border-gray-100">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold text-green-700 mb-1">Lamaran dibuka</p>
+                  <h2 className="text-lg font-bold text-blue-900 leading-tight">{selectedJob.title}</h2>
+                  <p className="text-xs text-gray-500 mt-1">{selectedJob.company} - {selectedJob.location} - {selectedJob.type}</p>
+                </div>
+                <button type="button" onClick={() => setSelectedJob(null)} className="shrink-0 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-bold text-gray-600 hover:bg-gray-200">Tutup</button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 text-sm text-gray-700">
+              <section className="space-y-2">
+                <h3 className="text-sm font-bold text-gray-900">Deskripsi Pekerjaan</h3>
+                <p className="text-xs leading-relaxed">{selectedJob.description}</p>
+                <div className="rounded-xl bg-blue-50 border border-blue-100 p-3">
+                  <p className="text-xs font-bold text-blue-900">Informasi tambahan</p>
+                  <p className="text-xs text-blue-900/80 mt-1 leading-relaxed">{selectedJob.extraInfo}</p>
+                </div>
+              </section>
+
+              <section className="space-y-2">
+                <h3 className="text-sm font-bold text-gray-900">Tanggung Jawab Utama</h3>
+                <ul className="space-y-1.5 text-xs leading-relaxed list-disc pl-5">
+                  {selectedJob.responsibilities.map((item) => <li key={item}>{item}</li>)}
+                </ul>
+              </section>
+
+              <section className="space-y-2">
+                <h3 className="text-sm font-bold text-gray-900">Kualifikasi</h3>
+                <ul className="space-y-1.5 text-xs leading-relaxed list-disc pl-5">
+                  {selectedJob.requirements.map((item) => <li key={item}>{item}</li>)}
+                </ul>
+              </section>
+
+              <section className="space-y-2">
+                <h3 className="text-sm font-bold text-gray-900">Syarat Kualifikasi</h3>
+                <ul className="space-y-1.5 text-xs leading-relaxed list-disc pl-5">
+                  {selectedJob.qualificationTerms.map((item) => <li key={item}>{item}</li>)}
+                </ul>
+              </section>
+
+              <div className="rounded-xl border border-gray-200 p-3">
+                <p className="text-xs font-bold text-gray-900">Tenggat Waktu Lamaran</p>
+                <p className="text-xs text-gray-600 mt-1">{selectedJob.deadline}</p>
+              </div>
+
+              <div className="flex items-center gap-2 border-y border-gray-100 py-2">
+                <button type="button" onClick={() => toggleJobLike(selectedJob.id)} className={`flex-1 rounded-lg py-2 text-xs font-bold hover:bg-gray-50 ${isSelectedJobLiked ? 'text-blue-700' : 'text-gray-500'}`}>
+                  {isSelectedJobLiked ? 'Disukai' : 'Like'}
+                </button>
+                <span className="text-xs text-gray-400">{selectedJobComments.length} Komentar</span>
+              </div>
+
+              <section className="space-y-2">
+                <h3 className="text-sm font-bold text-gray-900">Komentar</h3>
+                <div className="space-y-2">
+                  {selectedJobComments.length === 0 ? (
+                    <p className="text-xs text-gray-500 rounded-xl bg-gray-50 p-3">Belum ada komentar.</p>
+                  ) : (
+                    selectedJobComments.map((comment) => (
+                      <div key={comment.id} className="rounded-xl bg-gray-50 border border-gray-100 p-3">
+                        <p className="text-xs font-bold text-gray-900">{comment.author}</p>
+                        <p className="text-xs text-gray-600 mt-1 leading-relaxed">{comment.text}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    value={commentText}
+                    onChange={(event) => setCommentText(event.target.value)}
+                    className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-xs outline-none focus:border-blue-300"
+                    placeholder="Tulis komentar..."
+                  />
+                  <button type="button" onClick={addJobComment} className="rounded-lg bg-blue-900 text-white px-4 py-2 text-xs font-bold hover:bg-blue-800">Kirim</button>
+                </div>
+              </section>
+            </div>
+
+            <div className="p-4 border-t border-gray-100 grid grid-cols-3 gap-2">
+              <button type="button" onClick={applyToJob} disabled={isSelectedJobApplied} className="rounded-lg bg-blue-900 text-white px-3 py-2 text-xs font-bold hover:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed">
+                {isSelectedJobApplied ? 'Sudah Dilamar' : 'Lamar Sekarang'}
+              </button>
+              <button type="button" onClick={() => toggleSavedJob(selectedJob.id)} className="rounded-lg bg-gray-100 text-gray-800 px-3 py-2 text-xs font-bold hover:bg-gray-200">
+                {isSelectedJobSaved ? 'Tersimpan' : 'Simpan'}
+              </button>
+              <button type="button" onClick={() => setSelectedJob(null)} className="rounded-lg border border-gray-200 text-gray-700 px-3 py-2 text-xs font-bold hover:bg-gray-50">Tutup</button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
@@ -309,7 +568,8 @@ function NotifikasiContent() {
   );
 }
 
-function PekerjaanContent() {
+function PekerjaanContent({ user }: { user: { email: string } }) {
+  const [uploadedApplications, setUploadedApplications] = useState<JobApplication[]>([]);
   const applications = [
     {
       id: 1,
@@ -336,6 +596,32 @@ function PekerjaanContent() {
       note: 'Lamaran berhasil diserahkan kepada perusahaan dan belum ada pesan baru.',
     },
   ];
+  const allApplications = [
+    ...uploadedApplications.map((application) => ({
+      id: application.id,
+      position: application.jobTitle,
+      company: application.company,
+      submittedAt: application.submittedAt,
+      status: application.status,
+      note: `${application.note} Dokumen: ${application.uploadedDocuments.join(', ')}.`,
+      badge: 'Terkirim',
+    })),
+    ...applications.map((application) => ({ ...application, badge: 'Pending' })),
+  ];
+
+  useEffect(() => {
+    const syncApplications = () => {
+      setUploadedApplications(readApplications().filter((application) => application.applicantEmail === user.email));
+    };
+
+    syncApplications();
+    window.addEventListener(APPLICATIONS_UPDATED_EVENT, syncApplications);
+    window.addEventListener('storage', syncApplications);
+    return () => {
+      window.removeEventListener(APPLICATIONS_UPDATED_EVENT, syncApplications);
+      window.removeEventListener('storage', syncApplications);
+    };
+  }, [user.email]);
 
   return (
     <div className="space-y-4">
@@ -344,14 +630,14 @@ function PekerjaanContent() {
         <p className="text-xs text-gray-500 mt-1">Lamaran yang sudah diserahkan kepada perusahaan. Tinggal tunggu pesan dari rekruter.</p>
       </div>
       <div className="space-y-3">
-        {applications.map((application) => (
+        {allApplications.map((application) => (
           <article key={application.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <h2 className="text-sm font-bold text-gray-900 truncate">{application.position}</h2>
                 <p className="text-xs text-gray-500 mt-1">{application.company} - {application.submittedAt}</p>
               </div>
-              <span className="rounded-full bg-yellow-50 text-yellow-700 px-2 py-1 text-[11px] font-bold shrink-0">Pending</span>
+              <span className="rounded-full bg-yellow-50 text-yellow-700 px-2 py-1 text-[11px] font-bold shrink-0">{application.badge}</span>
             </div>
             <div className="rounded-xl bg-gray-50 border border-gray-100 p-3">
               <p className="text-xs font-bold text-gray-800">{application.status}</p>

@@ -1,21 +1,40 @@
 'use client';
 
 import Image from 'next/image';
+import { useEffect, useRef, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
-import type { CompanyTab } from './data';
+import { candidates, type CompanyTab } from './data';
 
 type TopBarProps = {
   query: string;
-  filter: string;
   onQueryChange: (value: string) => void;
   onFilterChange: (value: string) => void;
   onProfileClick: () => void;
   onTabChange: (tab: CompanyTab) => void;
 };
 
-export default function TopBar({ query, filter, onQueryChange, onFilterChange, onProfileClick, onTabChange }: TopBarProps) {
-  const router = useRouter();
+export default function TopBar({ query, onQueryChange, onFilterChange, onProfileClick, onTabChange }: TopBarProps) {
+  const [isFocused, setIsFocused] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const rekomendasiKategori = ['Frontend Developer', 'UI/UX Designer', 'Data Analyst', 'Mobile Engineer'];
+  const rekomendasiKandidat = candidates.map((candidate) => candidate.name);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsFocused(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectSearch = (value: string, nextFilter = 'Semua') => {
+    onQueryChange(value);
+    onFilterChange(nextFilter);
+    onTabChange('kandidat');
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 h-16 border-b border-gray-200 bg-white z-50 flex items-center justify-between gap-3 px-4">
@@ -28,26 +47,64 @@ export default function TopBar({ query, filter, onQueryChange, onFilterChange, o
         <span className="text-xl font-bold">=</span>
       </button>
 
-      <div className="flex-1 max-w-xl flex items-center gap-2 bg-gray-100 border border-gray-200 rounded-full px-3 py-2">
+      <div ref={dropdownRef} className="relative flex-1 max-w-xl flex items-center gap-2 bg-gray-100 border border-gray-200 rounded-full px-3 py-2">
         <span className="text-gray-400 text-xs font-bold">Cari</span>
         <input
+          type="text"
           value={query}
-          onChange={(event) => onQueryChange(event.target.value)}
-          onFocus={() => onTabChange('kandidat')}
+          onChange={(event) => {
+            onQueryChange(event.target.value);
+            onFilterChange('Semua');
+          }}
+          onFocus={() => {
+            setIsFocused(true);
+            onTabChange('kandidat');
+          }}
           className="min-w-0 flex-1 bg-transparent text-xs text-gray-800 placeholder-gray-400 outline-none"
           placeholder="Cari kandidat, posisi, atau skill..."
         />
-        <select
-          value={filter}
-          onChange={(event) => onFilterChange(event.target.value)}
-          className="max-w-32 bg-white border border-gray-200 rounded-full px-2 py-1 text-[11px] font-semibold text-gray-600 outline-none"
-          aria-label="Filter kandidat"
-        >
-          <option>Semua</option>
-          <option>Frontend Developer</option>
-          <option>UI/UX Designer</option>
-          <option>Data Analyst</option>
-        </select>
+
+        {isFocused && (
+          <div className="absolute top-full left-0 right-0 mt-2 p-4 rounded-xl shadow-xl border text-xs z-50 max-h-80 overflow-y-auto bg-white border-gray-100 text-gray-800">
+            {query.trim() === '' ? (
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-bold text-[10px] uppercase text-gray-400 tracking-wider mb-2">Kategori Populer</h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {rekomendasiKategori.map((kategori) => (
+                      <button
+                        key={kategori}
+                        type="button"
+                        onClick={() => selectSearch(kategori, kategori)}
+                        className="px-3 py-1.5 rounded-full font-medium bg-gray-100 hover:bg-gray-200 text-gray-600"
+                      >
+                        {kategori}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <hr className="border-gray-100" />
+                <div>
+                  <h4 className="font-bold text-[10px] uppercase text-gray-400 tracking-wider mb-1.5">Kandidat Rekomendasi</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                    {rekomendasiKandidat.map((kandidat) => (
+                      <button key={kandidat} type="button" onClick={() => selectSearch(kandidat)} className="text-left px-3 py-2 rounded-xl font-medium hover:bg-gray-50 text-gray-700">
+                        {kandidat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <h4 className="font-bold text-[10px] uppercase text-gray-400 tracking-wider mb-1.5">Hasil Pencarian untuk &quot;{query}&quot;</h4>
+                <button type="button" onClick={() => selectSearch(query)} className="w-full text-left px-3 py-2 rounded-xl font-medium hover:bg-gray-50">Cari kandidat <strong>{query}</strong></button>
+                <button type="button" onClick={() => selectSearch(query)} className="w-full text-left px-3 py-2 rounded-xl font-medium hover:bg-gray-50">Cari posisi <strong>{query}</strong></button>
+                <button type="button" onClick={() => selectSearch(query)} className="w-full text-left px-3 py-2 rounded-xl font-medium hover:bg-gray-50">Cari skill <strong>{query}</strong></button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <button
@@ -57,13 +114,6 @@ export default function TopBar({ query, filter, onQueryChange, onFilterChange, o
       >
         <Image src="/dashboard-images/nav-chat.svg" alt="" width={28} height={28} className="h-6 w-6" />
         Pesan
-      </button>
-      <button
-        type="button"
-        onClick={() => router.push('/login')}
-        className="h-10 rounded-full bg-red-50 px-3 text-xs font-bold text-red-600 hover:bg-red-100"
-      >
-        Log out
       </button>
     </header>
   );

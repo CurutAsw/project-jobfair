@@ -20,6 +20,14 @@ export type Chat = {
   time: string;
   unread: boolean;
   avatarUrl: string;
+  history: ChatMessage[];
+};
+
+export type ChatMessage = {
+  id: number;
+  sender: 'candidate' | 'company';
+  text: string;
+  time: string;
 };
 
 export const company = {
@@ -27,7 +35,7 @@ export const company = {
   email: 'recruiter@teknologimasa.co.id',
   industry: 'Teknologi Informasi',
   location: 'Jakarta Selatan',
-  size: '51-200 karyawan',
+  size: '200 karyawan',
   website: 'teknologimasa.co.id',
 };
 
@@ -76,6 +84,12 @@ export const chats: Chat[] = [
     time: '10.30',
     unread: true,
     avatarUrl: '/dashboard-images/avatar-siti.svg',
+    history: [
+      { id: 1, sender: 'company', text: 'Halo Siti, kami tertarik dengan profil Frontend Developer Anda.', time: '09.45' },
+      { id: 2, sender: 'candidate', text: 'Terima kasih. Saya siap mengikuti proses rekrutmen berikutnya.', time: '10.05' },
+      { id: 3, sender: 'company', text: 'Apakah Anda tersedia untuk interview teknis besok pagi?', time: '10.20' },
+      { id: 4, sender: 'candidate', text: 'Terima kasih, saya tersedia untuk interview teknis besok pagi.', time: '10.30' },
+    ],
   },
   {
     id: 2,
@@ -85,6 +99,11 @@ export const chats: Chat[] = [
     time: '09.10',
     unread: false,
     avatarUrl: '/dashboard-images/avatar-rizky.svg',
+    history: [
+      { id: 1, sender: 'company', text: 'Halo Rizky, boleh kirim portofolio UI/UX terbaru Anda?', time: '08.30' },
+      { id: 2, sender: 'candidate', text: 'Baik, saya kirimkan portofolio terbaru lewat email hari ini.', time: '08.45' },
+      { id: 3, sender: 'candidate', text: 'Saya sudah mengirim portfolio terbaru melalui email.', time: '09.10' },
+    ],
   },
   {
     id: 3,
@@ -94,5 +113,9 @@ export const chats: Chat[] = [
     time: 'Kemarin',
     unread: true,
     avatarUrl: '/dashboard-images/avatar-nadia.svg',
+    history: [
+      { id: 1, sender: 'company', text: 'Halo Nadia, profil Data Analyst Anda cocok dengan kebutuhan kami.', time: 'Kemarin' },
+      { id: 2, sender: 'candidate', text: 'Terima kasih. Apakah posisi ini mendukung sistem kerja hybrid?', time: 'Kemarin' },
+    ],
   },
 ];
