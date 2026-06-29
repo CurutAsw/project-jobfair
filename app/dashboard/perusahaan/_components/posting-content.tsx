@@ -5,9 +5,13 @@ import SocialPostCard from '../../_components/social-post-card';
 import { deleteApplicationsByJobId } from '../../_lib/applications';
 import { createNotification } from '../../_lib/notifications';
 import { createSocialPost, deleteSocialPost, getSocialJobId, readSocialPosts, SOCIAL_POSTS_UPDATED_EVENT, updateSocialPost, type SocialPost, type SocialPostType } from '../../_lib/social-posts';
+import type { DashboardUser } from '../../_lib/user-profile';
 
-export default function PostingContent() {
-  const user = { name: 'PT Teknologi Masa Depan' };
+function getInitials(name: string) {
+  return name.trim().split(/\s+/).map((word) => word[0]).join('').toUpperCase().slice(0, 2) || 'PT';
+}
+
+export default function PostingContent({ user }: { user: DashboardUser }) {
   const [postText, setPostText] = useState('');
   const [postType, setPostType] = useState<Extract<SocialPostType, 'pengumuman' | 'lowongan'>>('pengumuman');
   const [imageUrl, setImageUrl] = useState('');
@@ -83,7 +87,7 @@ export default function PostingContent() {
       ...post,
       comments: [
         ...post.comments,
-        { id: `comment-${Date.now()}`, authorName: user.name, text, createdAt: 'Baru saja' },
+        { id: `comment-${Date.now()}`, authorName: user.name, text, createdAt: 'Baru saja', replies: [] },
       ],
     }));
     const post = posts.find((item) => item.id === postId);
@@ -144,7 +148,7 @@ export default function PostingContent() {
         <>
           <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 space-y-3">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 bg-blue-900 text-white rounded-2xl flex items-center justify-center font-bold text-sm shrink-0">PT</div>
+              <div className="w-11 h-11 bg-blue-900 text-white rounded-2xl flex items-center justify-center font-bold text-sm shrink-0">{getInitials(user.name)}</div>
               <div>
                 <h2 className="text-sm font-bold text-gray-900">{user.name}</h2>
                 <p className="text-[11px] text-gray-500">Publik</p>

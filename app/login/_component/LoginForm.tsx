@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { saveCurrentUser } from '../../dashboard/_lib/user-profile';
 
 export default function LoginForm() {
   const router = useRouter();
@@ -24,6 +25,7 @@ export default function LoginForm() {
     const foundUser = users.find((u) => u.email === email && u.password === password);
 
     if (foundUser) {
+      saveCurrentUser(foundUser);
       alert(`Login berhasil! Selamat datang, ${foundUser.nama}`);
       
       // 3. Arahkan ke dashboard sesuai role

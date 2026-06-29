@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { APPLICATIONS_UPDATED_EVENT, readApplications, type JobApplication } from '../../_lib/applications';
 import { getSocialJobId, readSocialPosts, SOCIAL_POSTS_UPDATED_EVENT, type SocialPost } from '../../_lib/social-posts';
 
-export default function JobContent({ onContactApplicant }: { onContactApplicant: (application: JobApplication) => void }) {
+export default function JobContent({ companyName, onContactApplicant }: { companyName: string; onContactApplicant: (application: JobApplication) => void }) {
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [posts, setPosts] = useState<SocialPost[]>(() => readSocialPosts());
   const [managedJob, setManagedJob] = useState<SocialPost | null>(null);
@@ -27,7 +27,7 @@ export default function JobContent({ onContactApplicant }: { onContactApplicant:
     };
   }, []);
 
-  const lowonganPosts = posts.filter((post) => post.type === 'lowongan' && post.authorName === 'PT Teknologi Masa Depan');
+  const lowonganPosts = posts.filter((post) => post.type === 'lowongan' && post.authorName === companyName);
 
   const applicationsByJobId = useMemo(() => {
     return applications.reduce<Record<number, JobApplication[]>>((groupedApplications, application) => {

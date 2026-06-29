@@ -7,6 +7,7 @@ import type { CompanyTab } from './data';
 type BottomBarProps = {
   activeTab: CompanyTab;
   setActiveTab: (tab: CompanyTab) => void;
+  hasUnreadNotifications?: boolean;
 };
 
 const navItems: Array<{ id: CompanyTab; label: string; image: string }> = [
@@ -16,7 +17,7 @@ const navItems: Array<{ id: CompanyTab; label: string; image: string }> = [
   { id: 'lowongan', label: 'Lowongan', image: '/dashboard-images/nav-briefcase.svg' },
 ];
 
-export default function BottomBar({ activeTab, setActiveTab }: BottomBarProps) {
+export default function BottomBar({ activeTab, setActiveTab, hasUnreadNotifications = false }: BottomBarProps) {
   return (
     <nav className="fixed bottom-0 left-0 right-0 h-16 border-t flex items-center justify-around px-2 z-50 bg-white border-gray-200">
       {navItems.map((item) => {
@@ -32,7 +33,7 @@ export default function BottomBar({ activeTab, setActiveTab }: BottomBarProps) {
             <span className={`text-[10px] font-bold transition-colors ${isActive ? 'text-blue-900' : 'text-gray-500'}`}>
               {item.label}
             </span>
-            {item.id === 'notifikasi' && <span className="absolute top-2 right-5 w-2 h-2 bg-red-600 rounded-full" />}
+            {item.id === 'notifikasi' && hasUnreadNotifications && <span className="absolute top-2 right-5 w-2 h-2 bg-red-600 rounded-full" />}
           </button>
         );
       })}

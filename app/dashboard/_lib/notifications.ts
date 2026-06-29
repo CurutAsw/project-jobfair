@@ -28,12 +28,42 @@ export function readNotifications(audience: NotificationAudience) {
   }
 }
 
+function readAllNotifications() {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const rawNotifications = window.localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+    if (!rawNotifications) return [];
+    const parsedNotifications = JSON.parse(rawNotifications);
+    return Array.isArray(parsedNotifications) ? parsedNotifications as DashboardNotification[] : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeNotifications(notifications: DashboardNotification[]) {
+  window.localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
+  window.dispatchEvent(new Event(NOTIFICATIONS_UPDATED_EVENT));
+}
+
+export function hasUnreadNotifications(audience: NotificationAudience) {
+  return readNotifications(audience).some((notification) => notification.isNew);
+}
+
+export function markNotificationRead(notificationId: string) {
+  if (typeof window === 'undefined') return;
+
+  writeNotifications(readAllNotifications().map((notification) => (
+    notification.id === notificationId
+      ? { ...notification, isNew: false }
+      : notification
+  )));
+}
+
 export function createNotification(notification: Omit<DashboardNotification, 'id' | 'createdAt' | 'isNew'>) {
   if (typeof window === 'undefined') return;
 
-  const rawNotifications = window.localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
-  const currentNotifications = rawNotifications ? JSON.parse(rawNotifications) : [];
-  const notifications = Array.isArray(currentNotifications) ? currentNotifications as DashboardNotification[] : [];
+  const notifications = readAllNotifications();
   const nextNotifications: DashboardNotification[] = [
     {
       ...notification,
@@ -44,6 +74,5 @@ export function createNotification(notification: Omit<DashboardNotification, 'id
     ...notifications,
   ];
 
-  window.localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(nextNotifications));
-  window.dispatchEvent(new Event(NOTIFICATIONS_UPDATED_EVENT));
+  writeNotifications(nextNotifications);
 }

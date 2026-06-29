@@ -75,3 +75,12 @@ export function addChatMessage(chatId: string, sender: ChatParticipant, text: st
       : chat
   )));
 }
+
+export function markChatRead(chatId: string, participant: ChatParticipant) {
+  const chats = readChats();
+  writeChats(chats.map((chat) => (
+    chat.id === chatId && chat.unreadFor === participant
+      ? { ...chat, unreadFor: null }
+      : chat
+  )));
+}

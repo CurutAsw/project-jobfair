@@ -7,9 +7,10 @@ interface TopBarProps {
   activeTab: string;
   onProfileClick: () => void;
   onMessengerClick: () => void;
+  onSearch: (query: string) => void;
 }
 
-export default function TopBar({ activeTab, onProfileClick, onMessengerClick }: TopBarProps) {
+export default function TopBar({ activeTab, onProfileClick, onMessengerClick, onSearch }: TopBarProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -26,6 +27,14 @@ export default function TopBar({ activeTab, onProfileClick, onMessengerClick }: 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const submitSearch = (value = searchQuery) => {
+    const nextQuery = value.trim();
+    if (!nextQuery) return;
+    setSearchQuery(nextQuery);
+    setIsFocused(false);
+    onSearch(nextQuery);
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 h-16 border-b border-gray-200 bg-white z-50 flex items-center justify-between gap-3 px-4">
@@ -45,6 +54,9 @@ export default function TopBar({ activeTab, onProfileClick, onMessengerClick }: 
           value={searchQuery}
           onChange={(event) => setSearchQuery(event.target.value)}
           onFocus={() => setIsFocused(true)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') submitSearch();
+          }}
           placeholder={placeholder}
           className="min-w-0 flex-1 bg-transparent text-xs text-gray-800 placeholder-gray-400 outline-none"
         />
@@ -57,7 +69,7 @@ export default function TopBar({ activeTab, onProfileClick, onMessengerClick }: 
                   <h4 className="font-bold text-[10px] uppercase text-gray-400 tracking-wider mb-2">Kategori Populer</h4>
                   <div className="flex flex-wrap gap-1.5">
                     {rekomendasiKategori.map((kat) => (
-                      <button key={kat} type="button" onClick={() => setSearchQuery(kat)} className="px-3 py-1.5 rounded-full font-medium bg-gray-100 hover:bg-gray-200 text-gray-600">
+                      <button key={kat} type="button" onClick={() => submitSearch(kat)} className="px-3 py-1.5 rounded-full font-medium bg-gray-100 hover:bg-gray-200 text-gray-600">
                         {kat}
                       </button>
                     ))}
@@ -68,7 +80,7 @@ export default function TopBar({ activeTab, onProfileClick, onMessengerClick }: 
                   <h4 className="font-bold text-[10px] uppercase text-gray-400 tracking-wider mb-1.5">Perusahaan Rekomendasi</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
                     {rekomendasiPerusahaan.map((pt) => (
-                      <button key={pt} type="button" onClick={() => setSearchQuery(pt)} className="text-left px-3 py-2 rounded-xl font-medium hover:bg-gray-50 text-gray-700">
+                      <button key={pt} type="button" onClick={() => submitSearch(pt)} className="text-left px-3 py-2 rounded-xl font-medium hover:bg-gray-50 text-gray-700">
                         {pt}
                       </button>
                     ))}
@@ -78,8 +90,8 @@ export default function TopBar({ activeTab, onProfileClick, onMessengerClick }: 
             ) : (
               <div>
                 <h4 className="font-bold text-[10px] uppercase text-gray-400 tracking-wider mb-1.5">Hasil Pencarian untuk &quot;{searchQuery}&quot;</h4>
-                <button type="button" className="w-full text-left px-3 py-2 rounded-xl font-medium hover:bg-gray-50">Cari posisi <strong>{searchQuery}</strong></button>
-                <button type="button" className="w-full text-left px-3 py-2 rounded-xl font-medium hover:bg-gray-50">Cari perusahaan <strong>{searchQuery}</strong></button>
+                <button type="button" onClick={() => submitSearch()} className="w-full text-left px-3 py-2 rounded-xl font-medium hover:bg-gray-50">Cari posisi <strong>{searchQuery}</strong></button>
+                <button type="button" onClick={() => submitSearch()} className="w-full text-left px-3 py-2 rounded-xl font-medium hover:bg-gray-50">Cari perusahaan <strong>{searchQuery}</strong></button>
               </div>
             )}
           </div>

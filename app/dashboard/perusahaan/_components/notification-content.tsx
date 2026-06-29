@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { NOTIFICATIONS_UPDATED_EVENT, readNotifications, type DashboardNotification } from '../../_lib/notifications';
+import { markNotificationRead, NOTIFICATIONS_UPDATED_EVENT, readNotifications, type DashboardNotification } from '../../_lib/notifications';
 
 export default function NotificationContent() {
   const [filterAktif, setFilterAktif] = useState('semua');
   const [notifications, setNotifications] = useState<DashboardNotification[]>(() => readNotifications('company'));
+  const [openedNotificationId, setOpenedNotificationId] = useState<string | null>(null);
 
   useEffect(() => {
     const syncNotifications = () => setNotifications(readNotifications('company'));
@@ -18,6 +19,13 @@ export default function NotificationContent() {
     };
   }, []);
 
+  const visibleNotifications = notifications.filter((notif) => filterAktif === 'semua' || notif.category === filterAktif);
+
+  const openNotification = (notificationId: string) => {
+    setOpenedNotificationId((current) => current === notificationId ? null : notificationId);
+    markNotificationRead(notificationId);
+  };
+
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold text-blue-900">Notifikasi Perusahaan</h1>
@@ -29,20 +37,32 @@ export default function NotificationContent() {
         ))}
       </div>
       <div className="space-y-2">
-        {notifications.filter((notif) => filterAktif === 'semua' || notif.category === filterAktif).length === 0 ? (
+        {visibleNotifications.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 text-center">
             <h2 className="text-sm font-bold text-gray-900">Belum ada notifikasi</h2>
             <p className="text-xs text-gray-500 mt-1">Notifikasi akan muncul ketika ada interaksi baru.</p>
           </div>
         ) : (
-          notifications.filter((notif) => filterAktif === 'semua' || notif.category === filterAktif).map((notif) => (
-            <article key={notif.id} className={`p-4 rounded-xl border shadow-sm ${notif.isNew ? 'bg-blue-50/40 border-blue-100' : 'bg-white border-gray-200'}`}>
+          visibleNotifications.map((notif) => (
+            <button key={notif.id} type="button" onClick={() => openNotification(notif.id)} className={`w-full p-4 rounded-xl border shadow-sm text-left transition-colors ${notif.isNew ? 'bg-blue-50/40 border-blue-100' : 'bg-white border-gray-200 hover:bg-gray-50'}`}>
               <div className="flex justify-between gap-3 mb-1">
-                <h2 className="text-sm font-bold text-gray-900">{notif.title}</h2>
-                <span className="text-[10px] text-gray-400 shrink-0">{notif.createdAt}</span>
+                <div className="min-w-0">
+                  <h2 className="text-sm font-bold text-gray-900">{notif.title}</h2>
+                  <p className="text-[10px] font-bold text-blue-700 mt-0.5">{notif.isNew ? 'Baru' : 'Sudah dibuka'}</p>
+                </div>
+                <div className="flex items-start gap-2 shrink-0">
+                  {notif.isNew && <span className="mt-1 h-2 w-2 rounded-full bg-red-600" />}
+                  <span className="text-[10px] text-gray-400">{notif.createdAt}</span>
+                </div>
               </div>
               <p className="text-xs text-gray-600">{notif.description}</p>
-            </article>
+              {openedNotificationId === notif.id && (
+                <div className="mt-3 rounded-lg border border-gray-100 bg-gray-50 p-3">
+                  <p className="text-xs font-bold text-gray-900">Detail Notifikasi</p>
+                  <p className="text-xs text-gray-600 mt-1 leading-relaxed">{notif.description}</p>
+                </div>
+              )}
+            </button>
           ))
         )}
       </div>

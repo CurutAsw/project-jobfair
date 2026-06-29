@@ -5,10 +5,39 @@ import { useEffect, useState } from 'react';
 import SocialPostCard from '../../_components/social-post-card';
 import { createNotification } from '../../_lib/notifications';
 import { readSocialPosts, SOCIAL_POSTS_UPDATED_EVENT, updateSocialPost, type SocialPost } from '../../_lib/social-posts';
+import type { StoredUserProfile } from '../../_lib/user-profile';
 import type { Candidate } from './data';
 
-export default function CandidateContent({ candidates, query, filter, onContact }: { candidates: Candidate[]; query: string; filter: string; onContact: (candidate: Candidate) => void }) {
-  const companyName = 'PT Teknologi Masa Depan';
+function normalizeSearchText(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function matchesSearch(query: string, values: Array<string | undefined>) {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return true;
+
+  return values.some((value) => {
+    const normalizedValue = normalizeSearchText(value ?? '');
+    return normalizedValue.includes(normalizedQuery) || normalizedQuery.split(/\s+/).some((word) => word.length > 2 && normalizedValue.includes(word));
+  });
+}
+
+function getInitials(name: string) {
+  return name.trim().split(/\s+/).map((word) => word[0]).join('').toUpperCase().slice(0, 2) || 'U';
+}
+
+type CandidateContentProps = {
+  candidates: Candidate[];
+  query: string;
+  filter: string;
+  companyName: string;
+  searchAccounts?: StoredUserProfile[];
+  searchQuery?: string;
+  onClearSearch?: () => void;
+  onContact: (candidate: Candidate) => void;
+};
+
+export default function CandidateContent({ candidates, query, filter, companyName, searchAccounts = [], searchQuery = '', onClearSearch, onContact }: CandidateContentProps) {
   const [posts, setPosts] = useState<SocialPost[]>(() => readSocialPosts());
   const [likedPosts, setLikedPosts] = useState<string[]>([]);
 
@@ -43,7 +72,7 @@ export default function CandidateContent({ candidates, query, filter, onContact 
       ...post,
       comments: [
         ...post.comments,
-        { id: `comment-${Date.now()}`, authorName: companyName, text, createdAt: 'Baru saja' },
+        { id: `comment-${Date.now()}`, authorName: companyName, text, createdAt: 'Baru saja', replies: [] },
       ],
     }));
     const post = posts.find((item) => item.id === postId);
@@ -65,6 +94,79 @@ export default function CandidateContent({ candidates, query, filter, onContact 
       description: `${companyName} membagikan postingan ${post?.authorName ?? 'Anda'}.`,
     });
   };
+
+
+  const isSearchMode = searchQuery.trim().length > 0;
+
+  
+  const matchedPosts = posts.filter((post) => matchesSearch(searchQuery, [
+    post.authorName,
+    post.company,
+    post.type,
+    post.content,
+    post.jobTitle,
+    post.location,
+    post.workType,
+    post.salary,
+    post.deadline,
+  ]));
+
+  
+  if (isSearchMode) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h1 className="text-xl font-bold text-blue-900">Hasil Pencarian</h1>
+          <p className="text-xs text-gray-500 mt-1">Menampilkan akun dan postingan yang cocok dengan &quot;{searchQuery}&quot;.</p>
+        </div>
+
+        <section className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-sm font-bold text-gray-900">Akun yang cocok</h2>
+            {onClearSearch && (
+              <button type="button" onClick={onClearSearch} className="text-xs font-bold text-blue-700 hover:text-blue-900">
+                Kembali ke feed
+              </button>
+            )}
+          </div>
+
+          {searchAccounts.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+              <p className="text-xs text-gray-500">Tidak ada akun yang cocok.</p>
+            </div>
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {searchAccounts.map((account) => (
+                <article key={`${account.role}-${account.email}`} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex items-center gap-3">
+                  <div className={`h-11 w-11 rounded-2xl flex items-center justify-center text-sm font-bold text-white ${account.role === 'perusahaan' ? 'bg-blue-900' : 'bg-orange-700'}`}>
+                    {getInitials(account.nama || 'U')}
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-bold text-gray-900 truncate">{account.nama || 'Pengguna'}</h3>
+                    <p className="text-xs text-gray-500 truncate">{account.role === 'perusahaan' ? 'Perusahaan' : 'Pencari Kerja'} - {account.email}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-sm font-bold text-gray-900">Postingan yang cocok</h2>
+          {matchedPosts.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 text-center">
+              <h2 className="text-sm font-bold text-gray-900">Postingan tidak ditemukan</h2>
+              <p className="text-xs text-gray-500 mt-1">Coba gunakan nama akun, perusahaan, posisi, atau kata kunci lain.</p>
+            </div>
+          ) : (
+            matchedPosts.map((post) => (
+              <SocialPostCard key={post.id} post={post} currentUserName={companyName} isLiked={likedPosts.includes(post.id)} onLike={toggleLike} onComment={addComment} onShare={sharePost} />
+            ))
+          )}
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

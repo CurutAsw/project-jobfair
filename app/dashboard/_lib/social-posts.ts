@@ -8,6 +8,7 @@ export type SocialComment = {
   authorName: string;
   text: string;
   createdAt: string;
+  replies?: SocialComment[];
 };
 
 export type SocialPost = {

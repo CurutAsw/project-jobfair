@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
-import { addChatMessage, CHATS_UPDATED_EVENT, readChats, type SharedChat } from '../../_lib/chats';
+import { addChatMessage, CHATS_UPDATED_EVENT, markChatRead, readChats, type SharedChat } from '../../_lib/chats';
 import { createNotification } from '../../_lib/notifications';
 
 export default function MessageContent({ selectedChatId, onSelectChat }: { selectedChatId: string | null; onSelectChat: (chatId: string) => void }) {
@@ -20,6 +20,11 @@ export default function MessageContent({ selectedChatId, onSelectChat }: { selec
       window.removeEventListener('storage', syncChats);
     };
   }, []);
+
+  useEffect(() => {
+    if (!selectedChatId) return;
+    markChatRead(selectedChatId, 'company');
+  }, [selectedChatId]);
 
   const handleSendMessage = () => {
     if (!selectedChat || !draft.trim()) return;
@@ -48,14 +53,19 @@ export default function MessageContent({ selectedChatId, onSelectChat }: { selec
             chats.map((chat) => {
               const lastMessage = chat.messages.at(-1);
               const isActive = selectedChatId === chat.id;
+              const isUnread = chat.unreadFor === 'company';
 
               return (
                 <button
                   key={chat.id}
                   type="button"
-                  onClick={() => onSelectChat(chat.id)}
-                  className={`w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 ${isActive ? 'bg-blue-50 border-l-4 border-l-blue-900' : chat.unreadFor === 'company' ? 'bg-blue-50/30 border-l-4 border-l-blue-900' : ''}`}
+                  onClick={() => {
+                    onSelectChat(chat.id);
+                    markChatRead(chat.id, 'company');
+                  }}
+                  className={`relative w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 ${isActive ? 'bg-blue-50 border-l-4 border-l-blue-900' : ''}`}
                 >
+                  {!isActive && isUnread && <span className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-red-600" />}
                   <div className="flex items-center gap-3 min-w-0 pr-4">
                     <Image src={chat.avatarUrl} alt={`Foto ${chat.jobseekerName}`} width={44} height={44} className="w-11 h-11 rounded-2xl shrink-0" />
                     <div className="min-w-0">
@@ -103,7 +113,7 @@ export default function MessageContent({ selectedChatId, onSelectChat }: { selec
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') handleSendMessage();
                 }}
-                className="min-w-0 flex-1 rounded-full border border-gray-200 px-4 py-2 text-xs outline-none focus:border-blue-300"
+                className="min-w-0 flex-1 rounded-full border border-gray-200 px-4 py-2 text-xs text-gray-950 placeholder-gray-500 outline-none focus:border-blue-300"
                 placeholder="Tulis pesan..."
               />
               <button type="button" onClick={handleSendMessage} className="rounded-full bg-blue-900 text-white px-5 py-2 text-xs font-bold hover:bg-blue-800">Kirim</button>

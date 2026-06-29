@@ -11,9 +11,10 @@ type TopBarProps = {
   onFilterChange: (value: string) => void;
   onProfileClick: () => void;
   onTabChange: (tab: CompanyTab) => void;
+  onSearchSubmit: (value: string) => void;
 };
 
-export default function TopBar({ query, onQueryChange, onFilterChange, onProfileClick, onTabChange }: TopBarProps) {
+export default function TopBar({ query, onQueryChange, onFilterChange, onProfileClick, onTabChange, onSearchSubmit }: TopBarProps) {
   const [isFocused, setIsFocused] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const rekomendasiKategori = ['Frontend Developer', 'UI/UX Designer', 'Data Analyst', 'Mobile Engineer'];
@@ -33,7 +34,17 @@ export default function TopBar({ query, onQueryChange, onFilterChange, onProfile
   const selectSearch = (value: string, nextFilter = 'Semua') => {
     onQueryChange(value);
     onFilterChange(nextFilter);
+    onSearchSubmit(value);
     onTabChange('kandidat');
+    setIsFocused(false);
+  };
+
+  const submitSearch = () => {
+    const nextQuery = query.trim();
+    if (!nextQuery) return;
+    onSearchSubmit(nextQuery);
+    onTabChange('kandidat');
+    setIsFocused(false);
   };
 
   return (
@@ -59,6 +70,9 @@ export default function TopBar({ query, onQueryChange, onFilterChange, onProfile
           onFocus={() => {
             setIsFocused(true);
             onTabChange('kandidat');
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') submitSearch();
           }}
           className="min-w-0 flex-1 bg-transparent text-xs text-gray-800 placeholder-gray-400 outline-none"
           placeholder="Cari kandidat, posisi, atau skill..."

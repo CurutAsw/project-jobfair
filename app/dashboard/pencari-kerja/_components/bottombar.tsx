@@ -6,6 +6,7 @@ interface BottomBarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   isDarkMode?: boolean;
+  hasUnreadNotifications?: boolean;
 }
 
 const navItems = [
@@ -15,7 +16,7 @@ const navItems = [
   { id: 'pekerjaan', label: 'Pekerjaan', image: '/dashboard-images/nav-briefcase.svg' },
 ];
 
-export default function BottomBar({ activeTab, setActiveTab, isDarkMode = false }: BottomBarProps) {
+export default function BottomBar({ activeTab, setActiveTab, isDarkMode = false, hasUnreadNotifications = false }: BottomBarProps) {
   return (
     <nav className={`fixed bottom-0 left-0 right-0 h-16 border-t flex items-center justify-around px-2 z-50 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'}`}>
       {navItems.map((item) => {
@@ -26,7 +27,7 @@ export default function BottomBar({ activeTab, setActiveTab, isDarkMode = false 
             <span className={`text-[10px] font-bold transition-colors ${isActive ? 'text-blue-900' : isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
               {item.label}
             </span>
-            {item.id === 'notifikasi' && <span className="absolute top-2 right-5 w-2 h-2 bg-red-600 rounded-full" />}
+            {item.id === 'notifikasi' && hasUnreadNotifications && <span className="absolute top-2 right-5 w-2 h-2 bg-red-600 rounded-full" />}
           </button>
         );
       })}
